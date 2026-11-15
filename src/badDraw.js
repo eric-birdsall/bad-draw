@@ -19,13 +19,13 @@ const PRESETS = {
     ramp: 1.2,
     hiccups: 2,
     hiccupSize: 18,
-    duration: 120_000,
+    duration: 90_000,
     undo: 4,
     clear: 2,
-    note: "Gentle sway, 2 hiccups, 2 minutes, 4 undos",
+    note: "Gentle sway, 2 hiccups, 90 seconds, 4 undos",
   },
   medium: {
-    note: "Steady wobble, 4 hiccups, 90 seconds, 2 undos",
+    note: "Steady wobble, 4 hiccups, 60 seconds, 2 undos",
   },
   hard: {
     amplitude: 30,
@@ -34,10 +34,10 @@ const PRESETS = {
     ramp: 1.75,
     hiccups: 7,
     hiccupSize: 52,
-    duration: 60_000,
+    duration: 45_000,
     undo: 1,
     clear: 1,
-    note: "Big lurches, 7 hiccups, 60 seconds, 1 undo",
+    note: "Big lurches, 7 hiccups, 45 seconds, 1 undo",
   },
 };
 const RULES =
