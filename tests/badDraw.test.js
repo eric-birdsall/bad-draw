@@ -6,7 +6,7 @@ import {
   drunkenness,
   roundResult,
 } from "../shared/badDraw.js";
-import { BAD_DRAW_WORDS, createWordPicker } from "../shared/badDrawWords.js";
+import { BAD_DRAW_WORDS, DIFFICULTIES, createWordPicker, wordsAt } from "../shared/badDrawWords.js";
 
 const SOBER = { ...BAD_DRAW, ramp: 1, hiccups: 0 };
 const length = ({ x, y }) => Math.hypot(x, y);
@@ -121,7 +121,7 @@ test("the deadline beats a simultaneous Correct; the score uses remaining time",
 });
 
 test("the session word bank is deterministic with host randomness and exhausts before repeating", () => {
-  const prompts = Object.values(BAD_DRAW_WORDS).flat();
+  const prompts = wordsAt();
   const bank = new Set(prompts);
   assert.ok(bank.size >= 1000);
   assert.equal(bank.size, prompts.length);
@@ -153,4 +153,13 @@ test("after exhaustion a drawer gets a word they haven't seen when one is availa
   assert.equal(pick("b"), "owl");
   assert.equal(pick("b"), "frog");
   assert.equal(pick("a"), "owl");
+});
+
+test("every category tags its words easy, medium, or hard", () => {
+  for (const category of Object.values(BAD_DRAW_WORDS)) {
+    assert.deepEqual(Object.keys(category), [...DIFFICULTIES]);
+  }
+  for (const difficulty of DIFFICULTIES) {
+    assert.ok(wordsAt([difficulty]).length > 0);
+  }
 });

@@ -23,12 +23,30 @@
           <h2 data-heading></h2>
           <p data-description></p>
           <div class="difficulty" data-setup>
-            <label for="difficulty">Difficulty</label>
-            <select id="difficulty" data-difficulty>
-              <option value="easy">Easy</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Hard</option>
-            </select>
+            <div
+              class="difficulty-buttons"
+              role="radiogroup"
+              aria-label="Difficulty"
+              data-difficulty
+            >
+              <button type="button" role="radio" aria-checked="false" value="easy">Easy</button>
+              <button type="button" role="radio" aria-checked="true" value="medium">Medium</button>
+              <button type="button" role="radio" aria-checked="false" value="hard">Hard</button>
+            </div>
+            <button
+              type="button"
+              class="settings-button"
+              data-settings
+              aria-label="Settings"
+              title="Settings"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M19.11 9.32 L21.76 9.82 L21.76 14.18 L19.11 14.68 L18.92 15.14 L20.44 17.36 L17.36 20.44 L15.14 18.92 L14.68 19.11 L14.18 21.76 L9.82 21.76 L9.32 19.11 L8.86 18.92 L6.64 20.44 L3.56 17.36 L5.08 15.14 L4.89 14.68 L2.24 14.18 L2.24 9.82 L4.89 9.32 L5.08 8.86 L3.56 6.64 L6.64 3.56 L8.86 5.08 L9.32 4.89 L9.82 2.24 L14.18 2.24 L14.68 4.89 L15.14 5.08 L17.36 3.56 L20.44 6.64 L18.92 8.86Z"
+                />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
             <small data-difficulty-note></small>
           </div>
           <div class="actions">
@@ -81,11 +99,6 @@
               </div>
             </footer>
           </div>
-          <aside class="bad-draw-dev" aria-labelledby="dev-title">
-            <h2 id="dev-title">Dev panel</h2>
-            <div class="bad-draw-dev-controls"></div>
-            <button type="button" data-dev-reset>Reset defaults</button>
-          </aside>
         </div>
       </section>
 
@@ -108,6 +121,17 @@
         </button>
       </section>
     </main>
+
+    <dialog class="bad-draw-dev" aria-labelledby="dev-title">
+      <form method="dialog">
+        <h2 id="dev-title">Settings</h2>
+        <div class="bad-draw-dev-controls"></div>
+        <div class="actions">
+          <button type="button" data-dev-reset>Reset to preset</button>
+          <button class="primary">Done</button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="/src/badDraw.js"></script>
   </body>
 </html>

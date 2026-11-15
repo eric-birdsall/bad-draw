@@ -4,12 +4,12 @@ import {
   createDrift,
   roundResult,
 } from "../shared/badDraw.js";
-import { createWordPicker } from "../shared/badDrawWords.js";
+import { createWordPicker, wordsAt } from "../shared/badDrawWords.js";
 import { createDrawingCanvas } from "./badDrawCanvas.js";
 import { drawCover } from "./cover.js";
 import "./badDraw.css";
 
-// Normal is the shared default. Easy is a gentle sway with room for mistakes;
+// Medium is the shared default. Easy is a gentle sway with room for mistakes;
 // Hard wanders far and fast, hiccups often, and gives less time and fewer fixes.
 const PRESETS = {
   easy: {
@@ -24,7 +24,7 @@ const PRESETS = {
     clear: 2,
     note: "Gentle sway, 2 hiccups, 2 minutes, 4 undos",
   },
-  normal: {
+  medium: {
     note: "Steady wobble, 5 hiccups, 90 seconds, 2 undos",
   },
   hard: {
@@ -116,7 +116,8 @@ const DEV_SLIDERS = [
 
 const root = document.querySelector(".bad-draw");
 const tuning = { ...C };
-const pickWord = createWordPicker();
+// Hard words are hidden for now; add "hard" here to bring them back.
+const pickWord = createWordPicker({ words: wordsAt(["easy", "medium"]) });
 
 const get = (key) => root.querySelector(`[data-${key}]`);
 const intro = root.querySelector(".bad-draw-intro");
@@ -143,22 +144,22 @@ const DRUNK_WORDS = [
 
 const resultCard = root.querySelector(".result-card");
 const snapshot = resultCard.querySelector("img");
-const difficulty = get("difficulty");
-const devControls = root.querySelector(".bad-draw-dev-controls");
+const difficultyButtons = get("difficulty").querySelectorAll("button");
+let difficulty = "medium";
+const settings = document.querySelector(".bad-draw-dev");
+const devControls = settings.querySelector(".bad-draw-dev-controls");
 devControls.innerHTML = DEV_SLIDERS.map(
   ({ key, label, min, max, step }) => `
   <div class="bad-draw-dev-row">
     <label for="tune-${key}">${label}</label>
     <output for="tune-${key}"></output>
     <input type="range" id="tune-${key}" min="${min}" max="${max}" step="${step}">
-    ${key === "strokeWidth" ? "<small>Applies to the next stroke</small>" : ""}
-    ${key === "duration" ? "<small>Applies to the next round</small>" : ""}
   </div>
 `,
 ).join("");
 
 const controls = DEV_SLIDERS.map(({ key, unit, format }) => {
-  const input = root.querySelector(`#tune-${key}`);
+  const input = settings.querySelector(`#tune-${key}`);
   const output = input.previousElementSibling;
   function update() {
     tuning[key] = input.valueAsNumber;
@@ -174,14 +175,27 @@ const controls = DEV_SLIDERS.map(({ key, unit, format }) => {
 });
 
 function resetTuning() {
-  const { note, ...defaults } = { ...C, ...PRESETS[difficulty.value] };
+  const { note, ...defaults } = { ...C, ...PRESETS[difficulty] };
   Object.assign(tuning, defaults);
   controls.forEach((reset) => reset(defaults));
   get("difficulty-note").textContent = note;
 }
 
-listen(difficulty, "change", resetTuning);
-listen(get("dev-reset"), "click", resetTuning);
+difficultyButtons.forEach((button) =>
+  listen(button, "click", () => {
+    difficulty = button.value;
+    difficultyButtons.forEach((other) =>
+      other.setAttribute("aria-checked", String(other === button)),
+    );
+    resetTuning();
+  }),
+);
+listen(settings.querySelector("[data-dev-reset]"), "click", resetTuning);
+// Tuning happens on the main menu only, never mid-round.
+listen(get("settings"), "click", () => settings.showModal());
+listen(settings, "click", (event) => {
+  if (event.target === settings) settings.close();
+});
 resetTuning();
 
 let audio;

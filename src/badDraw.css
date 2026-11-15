@@ -130,8 +130,29 @@ small {
 .difficulty small {
   grid-column: 1 / -1;
 }
-button,
-select {
+.difficulty-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+.difficulty-buttons button[aria-checked="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.settings-button {
+  width: 3rem;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.settings-button svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+button {
   border: 1px solid var(--ink);
   border-radius: 0.2rem;
   padding: 0.55rem 0.8rem;
@@ -143,8 +164,7 @@ select {
 
 /* Touch only: big targets, press feedback instead of hover, and no
    double-tap zoom, text selection, or long-press callouts. */
-button,
-select {
+button {
   min-height: 3rem;
   padding: 0.7rem 1.1rem;
   font-size: 1.05rem;
@@ -245,7 +265,7 @@ footer {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 1rem;
 }
@@ -468,9 +488,21 @@ footer p {
   color: var(--muted);
 }
 .bad-draw-dev {
+  width: min(26rem, 100% - 2rem);
+  max-height: calc(100% - 2rem);
   background: #f3efe3;
+  color: var(--ink);
   border: 1px solid var(--line);
-  padding: 0.8rem 1rem;
+  border-radius: 0.3rem;
+  padding: 1rem 1.2rem;
+}
+.bad-draw-dev::backdrop {
+  background: rgb(38 58 53 / 0.45);
+}
+.bad-draw-dev .actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .bad-draw-dev h2 {
@@ -503,9 +535,6 @@ footer p {
 }
 .bad-draw-dev-row small {
   font-size: 0.74rem;
-}
-[data-dev-reset] {
-  font-size: 0.85rem;
 }
 
 .result-card {
@@ -557,9 +586,6 @@ footer p {
   .sketch-preview {
     width: min(70%, 240px);
     margin: 0.25rem auto;
-  }
-  .bad-draw-dev-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   footer > p {
     display: none;
