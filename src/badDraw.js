@@ -13,31 +13,31 @@ import "./badDraw.css";
 // Hard wanders far and fast, hiccups often, and gives less time and fewer fixes.
 const PRESETS = {
   easy: {
-    amplitude: 12,
-    frequency: 1.2,
+    amplitude: 9,
+    frequency: 1.05,
     lean: 0.25,
-    ramp: 1.3,
+    ramp: 1.2,
     hiccups: 2,
-    hiccupSize: 25,
+    hiccupSize: 18,
     duration: 120_000,
     undo: 4,
     clear: 2,
     note: "Gentle sway, 2 hiccups, 2 minutes, 4 undos",
   },
   medium: {
-    note: "Steady wobble, 5 hiccups, 90 seconds, 2 undos",
+    note: "Steady wobble, 4 hiccups, 90 seconds, 2 undos",
   },
   hard: {
-    amplitude: 40,
-    frequency: 2.6,
+    amplitude: 30,
+    frequency: 2.3,
     lean: 0.5,
-    ramp: 2,
-    hiccups: 9,
-    hiccupSize: 70,
+    ramp: 1.75,
+    hiccups: 7,
+    hiccupSize: 52,
     duration: 60_000,
     undo: 1,
     clear: 1,
-    note: "Big lurches, 9 hiccups, 60 seconds, 1 undo",
+    note: "Big lurches, 7 hiccups, 60 seconds, 1 undo",
   },
 };
 const RULES =

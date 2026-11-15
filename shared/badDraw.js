@@ -2,17 +2,17 @@ export const BAD_DRAW = Object.freeze({
   duration: 90_000,
   width: 960,
   height: 600,
-  amplitude: 24,
-  frequency: 1.8,
+  amplitude: 18,
+  frequency: 1.6,
   // Share of the wander that comes from a slow lean (about a quarter the speed).
   lean: 0.35,
   // Distance and speed multiplier reached by the end of the round.
-  ramp: 1.6,
+  ramp: 1.45,
   // Hiccups per round (0 turns them off), their reach and length. The round is
   // split into this many equal stretches, with one hiccup at a random moment
   // in each.
-  hiccups: 5,
-  hiccupSize: 45,
+  hiccups: 4,
+  hiccupSize: 34,
   hiccupMs: 320,
   strokeWidth: 5,
   ink: "#233c36",

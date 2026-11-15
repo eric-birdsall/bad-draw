@@ -23,7 +23,8 @@ test("drift changes smoothly, varies by seed and stays within the logical ink of
   assert.ok(
     points.slice(1).every((point, i) => distance(point, points[i]) < 4),
   );
-  assert.ok(points.some((point) => distance(point, points[0]) > 20));
+  assert.ok(points.some((point) => distance(point, points[0]) > BAD_DRAW.amplitude * 0.8),
+  );
   assert.deepEqual(drift(1250), createDrift(41, SOBER)(1250));
   assert.notDeepEqual(drift(1250), createDrift(17, SOBER)(1250));
   assert.notDeepEqual(drift(1250), drift(4250));
