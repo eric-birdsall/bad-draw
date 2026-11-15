@@ -1,6 +1,6 @@
-# Bad Draw
+# Drunk Drawing
 
-Bad Draw is a same-room drawing and guessing game. Your team guesses out loud while your ink drifts away from where you aim.
+Drunk Drawing is a same-room drawing and guessing game. Your team guesses out loud while your ink drifts away from where you aim.
 
 Run `npm ci` and `npm run dev`, then open the URL Vite prints. Use `npm test` for the game logic tests and `npm run build` to make a static build. All 1,000 prompts are bundled locally. The game needs no backend.
 

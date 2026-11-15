@@ -1,4 +1,4 @@
-name: Deploy Bad Draw to GitHub Pages
+name: Deploy Drunk Drawing to GitHub Pages
 
 on:
   push:
