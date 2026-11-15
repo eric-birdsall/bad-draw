@@ -38,7 +38,7 @@ body {
 
 .masthead {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   flex-wrap: wrap;
   gap: 0.25rem 1.3rem;
   border-bottom: 1px solid var(--line);
@@ -64,13 +64,11 @@ h1 {
   line-height: 1;
 }
 
-h1 span {
-  display: inline-block;
-  margin-left: 0.26em;
-  color: var(--pencil);
-  font-size: 0.4em;
-  vertical-align: top;
-  transform: rotate(-16deg);
+.logo {
+  display: block;
+  height: clamp(4.5rem, 14vw, 7.5rem);
+  width: auto;
+  max-width: 100%;
 }
 
 .masthead p,
