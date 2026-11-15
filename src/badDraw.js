@@ -516,10 +516,10 @@ function showHiccup({ angle }) {
   meter.classList.add("jolt");
 }
 
-/** Drain the mug as the round goes on: the more you've drunk, the drunker. */
+/** Fill the glass as the round goes on: the fuller it gets, the drunker. */
 function updateMeter(now) {
   const drunk = clamp((now - roundStart) / roundDuration, 0, 1);
-  meter.style.setProperty("--level", (1 - drunk).toFixed(4));
+  meter.style.setProperty("--level", drunk.toFixed(4));
   const word = DRUNK_WORDS.find(([from]) => drunk >= from)[1];
   if (get("drunk").textContent !== word) {
     get("drunk").textContent = word;

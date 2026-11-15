@@ -310,18 +310,19 @@ footer {
   pointer-events: none;
 }
 
-/* Drunk meter: a glass of beer on its side in the top bar, draining toward
-   its base as the round goes on. --level runs from 1 (full) to 0 (empty). */
+/* Drunk meter: a glass of beer on its side in the top bar that fills up as
+   the round goes on, with the label over it. --level runs from 0 (empty) to
+   1 (full). */
 .round-bar {
   flex-wrap: nowrap;
 }
 .drunk-meter {
-  --level: 1;
+  --level: 0;
+  position: relative;
   flex: 1 1 auto;
   max-width: 34rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
 }
 .mug {
   position: relative;
@@ -358,6 +359,8 @@ footer {
   left: 0;
   width: calc(var(--level) * 96%);
   border-right: 6px solid #fbf6e6;
+  /* No stray foam while the glass is still empty. */
+  opacity: min(1, calc(var(--level) * 40));
   background:
     radial-gradient(circle, #fbe3a0 1.6px, transparent 2.1px) 0 0 / 41px 15px,
     radial-gradient(circle, #fbe3a0 1.2px, transparent 1.7px) 21px 8px / 41px
@@ -392,13 +395,22 @@ footer {
   }
 }
 .drunk-meter span {
-  min-width: 4.2em;
-  text-align: right;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--pencil);
+  color: var(--ink);
+  /* A pale halo keeps it readable over beer and empty glass alike. */
+  text-shadow:
+    0 0 2px #fffdf4,
+    0 0 4px #fffdf4,
+    0 0 6px #fffdf4;
 }
 .drunk-meter.jolt .mug {
   animation: mug-wobble 0.6s ease-out;
@@ -584,17 +596,13 @@ footer p {
   .bad-draw-clock span {
     display: none;
   }
-  .drunk-meter {
-    gap: 0.35rem;
-  }
   .mug {
     height: 24px;
     border-width: 2px 2px 2px 6px;
   }
   .drunk-meter span {
-    min-width: 0;
-    font-size: 0.62rem;
-    letter-spacing: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
   }
   .sketch-preview {
     width: min(70%, 240px);
