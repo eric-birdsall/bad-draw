@@ -2,7 +2,6 @@ import {
   BAD_DRAW as C,
   DRAW_PHASE as PHASE,
   createDrift,
-  drawStick,
   roundResult,
 } from "../shared/badDraw.js";
 import { createWordPicker } from "../shared/badDrawWords.js";
@@ -10,9 +9,37 @@ import { createDrawingCanvas } from "./badDrawCanvas.js";
 import { drawCover } from "./cover.js";
 import "./badDraw.css";
 
-const PAD = { A: 0, B: 1, X: 2, Y: 3, RT: 7, MENU: 9 };
-// Presets share the existing defaults until difficulty values are decided.
-const PRESETS = { easy: {}, normal: {}, hard: {} };
+// Normal is the shared default. Easy is a gentle sway with room for mistakes;
+// Hard wanders far and fast, hiccups often, and gives less time and fewer fixes.
+const PRESETS = {
+  easy: {
+    amplitude: 12,
+    frequency: 1.2,
+    lean: 0.25,
+    ramp: 1.3,
+    hiccups: 2,
+    hiccupSize: 25,
+    duration: 120_000,
+    undo: 4,
+    clear: 2,
+    note: "Gentle sway, 2 hiccups, 2 minutes, 4 undos",
+  },
+  normal: {
+    note: "Steady wobble, 5 hiccups, 90 seconds, 2 undos",
+  },
+  hard: {
+    amplitude: 40,
+    frequency: 2.6,
+    lean: 0.5,
+    ramp: 2,
+    hiccups: 9,
+    hiccupSize: 70,
+    duration: 60_000,
+    undo: 1,
+    clear: 1,
+    note: "Big lurches, 9 hiccups, 60 seconds, 1 undo",
+  },
+};
 const RULES =
   "Pick a drawer. Sketch the secret word while everyone else guesses aloud. No talking or writing letters.";
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -70,22 +97,6 @@ const DEV_SLIDERS = [
     unit: " px",
   },
   {
-    key: "cursorSpeed",
-    label: "Stick speed",
-    min: 100,
-    max: 1500,
-    step: 10,
-    unit: " px/s",
-  },
-  {
-    key: "deadZone",
-    label: "Stick dead zone",
-    min: 0,
-    max: 0.5,
-    step: 0.01,
-    unit: "",
-  },
-  {
     key: "strokeWidth",
     label: "Ink width",
     min: 1,
@@ -117,12 +128,7 @@ const listen = (target, name, handler) =>
   target.addEventListener(name, handler);
 const resize = new ResizeObserver(() => ink.resize());
 let phase, word, deadline, roundDuration, undoLeft, clearLeft, lastSecond;
-let owner,
-  pointerId,
-  revealId,
-  revealKey = false,
-  revealPad = false;
-let intended, previousFrame, padIndex, previousPad;
+let pointerId, revealId, intended;
 let drift, roundStart, lastHiccup;
 const sheet = play.querySelector(".bad-draw-sheet");
 const hic = play.querySelector(".bad-draw-hic");
@@ -168,8 +174,10 @@ const controls = DEV_SLIDERS.map(({ key, unit, format }) => {
 });
 
 function resetTuning() {
-  const defaults = { ...C, ...PRESETS[difficulty.value] };
+  const { note, ...defaults } = { ...C, ...PRESETS[difficulty.value] };
+  Object.assign(tuning, defaults);
   controls.forEach((reset) => reset(defaults));
+  get("difficulty-note").textContent = note;
 }
 
 listen(difficulty, "change", resetTuning);
@@ -204,19 +212,17 @@ function ready() {
   hideWord();
   snapshot.removeAttribute("src");
   resultCard.hidden = play.hidden = true;
+  root.classList.remove("playing");
   intro.hidden = false;
   get("setup").hidden = get("next").hidden = false;
   get("peek").hidden = get("leave").hidden = true;
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES;
-  get("next").firstChild.nodeValue = "Continue ";
-  get("next").focus({ preventScroll: true });
+  get("next").textContent = "Continue";
 }
 
 function showWord() {
-  const visible =
-    phase === PHASE.REVEAL &&
-    (revealId !== undefined || revealKey || revealPad);
+  const visible = phase === PHASE.REVEAL && revealId !== undefined;
   const secret = get("word");
   if (secret.hidden === visible) {
     secret.textContent = visible ? word : "";
@@ -230,7 +236,6 @@ function hideWord() {
   revealId = undefined;
   if (id !== undefined && get("peek").hasPointerCapture(id))
     get("peek").releasePointerCapture(id);
-  revealKey = revealPad = false;
   showWord();
 }
 
@@ -243,32 +248,26 @@ function reveal() {
   get("description").textContent =
     "Drawer, hold to peek. Let go before you start the clock.";
   get("peek").hidden = false;
-  get("next").firstChild.nodeValue = "Start drawing ";
+  get("next").textContent = "Start drawing";
 }
 
 function go() {
   if (phase === PHASE.READY) {
     unlockAudio();
     reveal();
-  } else if (
-    phase === PHASE.REVEAL &&
-    !get("next").disabled &&
-    !previousPad?.rt
-  ) {
-    // The controller's first sample in play is a baseline, not a press.
+  } else if (phase === PHASE.REVEAL && !get("next").disabled) {
     phase = PHASE.PLAYING;
-    previousPad = undefined;
     hideWord();
     const now = performance.now();
-    previousFrame = now;
     roundDuration = tuning.duration;
     deadline = now + roundDuration;
     lastSecond = undefined;
-    undoLeft = C.undo;
-    clearLeft = C.clear;
+    undoLeft = tuning.undo;
+    clearLeft = tuning.clear;
     intended = center();
     intro.hidden = true;
     play.hidden = false;
+    root.classList.add("playing");
     ink.resize();
     drift = createDrift(
       Math.floor(Math.random() * 0x100000000),
@@ -285,7 +284,6 @@ function go() {
     cursor.hidden = true;
     updateTools();
     updateClock(now);
-    get("correct").focus({ preventScroll: true });
     sound(380);
     sound(560, 0.16, 0.08);
   }
@@ -297,6 +295,7 @@ function finish(correct, now = performance.now()) {
   phase = PHASE.RESULTS;
   stopDrawing();
   play.hidden = true;
+  root.classList.remove("playing");
   snapshot.src = canvas.toDataURL();
   sound(result.success ? 540 : 230, 0.18);
   if (result.success) sound(760, 0.2, 0.11);
@@ -305,7 +304,6 @@ function finish(correct, now = performance.now()) {
   get("score").textContent = result.score;
   get("remaining").textContent = `${(result.remaining / 1000).toFixed(1)}s`;
   resultCard.hidden = false;
-  get("again").focus({ preventScroll: true });
 }
 
 function updateClock(now) {
@@ -333,7 +331,7 @@ function updateTools() {
 
 function stopDrawing() {
   const id = pointerId;
-  pointerId = owner = undefined;
+  pointerId = undefined;
   if (id !== undefined && canvas.hasPointerCapture(id))
     canvas.releasePointerCapture(id);
   ink.end();
@@ -376,13 +374,12 @@ function pointerPoint(event, rect) {
 }
 
 listen(canvas, "pointerdown", (event) => {
-  if (phase !== PHASE.PLAYING || owner || event.button !== 0) return;
+  if (phase !== PHASE.PLAYING || pointerId !== undefined) return;
   const now = performance.now();
   if (now >= deadline) return finish(false, now);
   event.preventDefault();
   const { x, y } = pointerPoint(event, canvas.getBoundingClientRect());
   moveCursor(x, y);
-  owner = "pointer";
   pointerId = event.pointerId;
   canvas.setPointerCapture(pointerId);
   ink.begin(x, y, now, tuning.strokeWidth);
@@ -390,24 +387,17 @@ listen(canvas, "pointerdown", (event) => {
 });
 
 listen(canvas, "pointermove", (event) => {
-  if (
-    phase !== PHASE.PLAYING ||
-    owner === "pad" ||
-    (owner === "pointer" && event.pointerId !== pointerId)
-  )
-    return;
+  if (phase !== PHASE.PLAYING || event.pointerId !== pointerId) return;
   const now = performance.now();
   if (now >= deadline) return finish(false, now);
   const rect = canvas.getBoundingClientRect();
-  if (owner === "pointer") {
-    for (const sample of event.getCoalescedEvents?.() || []) {
-      const p = pointerPoint(sample, rect);
-      ink.advance(p.x, p.y, Math.min(now, sample.timeStamp || now));
-    }
+  for (const sample of event.getCoalescedEvents?.() || []) {
+    const p = pointerPoint(sample, rect);
+    ink.advance(p.x, p.y, Math.min(now, sample.timeStamp || now));
   }
   const { x, y } = pointerPoint(event, rect);
   moveCursor(x, y);
-  if (owner === "pointer") ink.advance(x, y, now);
+  ink.advance(x, y, now);
 });
 
 listen(canvas, "pointerup", (event) => {
@@ -417,8 +407,7 @@ listen(canvas, "pointerup", (event) => {
   const { x, y } = pointerPoint(event, canvas.getBoundingClientRect());
   ink.advance(x, y, now);
   stopDrawing();
-  if (event.pointerType !== "mouse" || !canvas.matches(":hover"))
-    cursor.hidden = true;
+  cursor.hidden = true;
 });
 for (const name of ["pointercancel", "lostpointercapture"]) {
   listen(canvas, name, (event) => {
@@ -428,13 +417,8 @@ for (const name of ["pointercancel", "lostpointercapture"]) {
   });
 }
 
-listen(canvas, "pointerleave", () => {
-  if (owner !== "pad") cursor.hidden = true;
-});
-
 listen(get("peek"), "pointerdown", (event) => {
-  if (phase !== PHASE.REVEAL || revealId !== undefined || event.button !== 0)
-    return;
+  if (phase !== PHASE.REVEAL || revealId !== undefined) return;
   event.preventDefault();
   revealId = event.pointerId;
   get("peek").setPointerCapture(revealId);
@@ -447,105 +431,18 @@ for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
     showWord();
   });
 }
-listen(window, "keydown", (event) => {
-  if (phase !== PHASE.REVEAL || event.code !== "Space") return;
-  event.preventDefault();
-  if (event.repeat) return;
-  revealKey = true;
-  showWord();
-});
-listen(window, "keyup", (event) => {
-  if (phase !== PHASE.REVEAL || event.code !== "Space") return;
-  event.preventDefault();
-  revealKey = false;
-  showWord();
-  if (!get("next").disabled) get("next").focus({ preventScroll: true });
-});
+// A long press on the peek button must not open a callout or select text.
+listen(get("peek"), "contextmenu", (event) => event.preventDefault());
 
 function suspendInput() {
   stopDrawing();
   hideWord();
   cursor.hidden = true;
-  previousPad = undefined;
 }
 listen(window, "blur", suspendInput);
 listen(document, "visibilitychange", () => {
   if (document.hidden) suspendInput();
 });
-
-function readPad(now, dt) {
-  const pads = navigator.getGamepads?.() || [];
-  const pad = pads[padIndex]?.connected
-    ? pads[padIndex]
-    : Array.from(pads).find(
-        (candidate) => candidate?.connected && candidate.mapping === "standard",
-      );
-  if (pad?.index !== padIndex || !pad) {
-    padIndex = pad?.index;
-    previousPad = undefined;
-    if (owner === "pad") {
-      stopDrawing();
-      cursor.hidden = true;
-    }
-    if (revealPad) {
-      revealPad = false;
-      showWord();
-    }
-  }
-  if (!pad) return;
-  const held = (i) =>
-    Boolean(pad.buttons[i]?.pressed || pad.buttons[i]?.value > 0.5);
-  const buttons = {
-    rt: held(PAD.RT),
-    a: held(PAD.A),
-    b: held(PAD.B),
-    x: held(PAD.X),
-    y: held(PAD.Y),
-    menu: held(PAD.MENU),
-  };
-  const was = previousPad;
-  previousPad = buttons;
-  if (!was) return;
-  const pressed = (key) => buttons[key] && !was[key];
-
-  if (phase === PHASE.READY) {
-    if (pressed("a")) go();
-    return;
-  }
-  if (phase === PHASE.RESULTS) {
-    if (pressed("a") || pressed("b")) ready();
-    return;
-  }
-  if (phase === PHASE.REVEAL) {
-    if (pressed("b")) return ready();
-    // If A and the reveal release land in the same frame, require a new A.
-    const wasRevealed = get("next").disabled || was.rt;
-    if (pressed("rt")) revealPad = true;
-    if (!buttons.rt) revealPad = false;
-    showWord();
-    if (pressed("a") && !wasRevealed) go();
-    return;
-  }
-
-  if (pressed("menu")) return ready();
-  if (pressed("a")) return finish(true, now);
-  if (pressed("y")) return tool("clear");
-  if (pressed("x")) return tool("undo");
-  if (owner === "pointer") return;
-  if (!buttons.rt && owner === "pad") stopDrawing();
-  const stick = drawStick(pad.axes[0] || 0, pad.axes[1] || 0, tuning.deadZone);
-  if (stick.x || stick.y || pressed("rt")) {
-    moveCursor(
-      clamp(intended.x + stick.x * dt * tuning.cursorSpeed, 0, C.width),
-      clamp(intended.y + stick.y * dt * tuning.cursorSpeed, 0, C.height),
-    );
-  }
-  if (pressed("rt")) {
-    owner = "pad";
-    ink.begin(intended.x, intended.y, now, tuning.strokeWidth);
-    updateTools();
-  }
-}
 
 /** Pop a "hic!" beside the pen, on the side the ink is jolted toward. */
 function showHiccup({ angle }) {
@@ -589,11 +486,8 @@ function tick(now) {
       showHiccup(hiccup);
     }
   }
-  if (document.hasFocus() && !document.hidden) {
-    readPad(now, clamp(now - previousFrame, 0, C.maxSampleGap) / 1000);
-  }
-  if (owner) ink.advance(intended.x, intended.y, now);
-  previousFrame = now;
+  // Keep sampling the drift while the finger rests in place.
+  if (pointerId !== undefined) ink.advance(intended.x, intended.y, now);
   requestAnimationFrame(tick);
 }
 
@@ -602,9 +496,6 @@ get("leave").onclick = get("exit").onclick = get("again").onclick = ready;
 get("correct").onclick = () => finish(true);
 get("undo").onclick = () => tool("undo");
 get("clear").onclick = () => tool("clear");
-listen(window, "keydown", (event) => {
-  if (event.key === "Escape" && phase !== PHASE.READY) ready();
-});
 resize.observe(canvas);
 drawCover(get("preview"));
 ready();

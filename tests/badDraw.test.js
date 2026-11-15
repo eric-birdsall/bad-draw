@@ -3,7 +3,6 @@ import test from "node:test";
 import {
   BAD_DRAW,
   createDrift,
-  drawStick,
   drunkenness,
   roundResult,
 } from "../shared/badDraw.js";
@@ -119,15 +118,6 @@ test("the deadline beats a simultaneous Correct; the score uses remaining time",
     score: 0,
   });
   assert.equal(roundResult(true, end, end + 1).score, 0);
-});
-
-test("the controller dead zone ignores stick noise without making diagonals faster", () => {
-  assert.deepEqual(drawStick(0.06, 0.06), { x: 0, y: 0 });
-  assert.deepEqual(drawStick(1, 0), { x: 1, y: 0 });
-  const { x, y } = drawStick(1, 1);
-  assert.ok(Math.abs(Math.hypot(x, y) - 1) < 1e-9);
-  assert.equal(x, y);
-  assert.ok(drawStick(0.5, 0).x > 0 && drawStick(0.5, 0).x < 0.5);
 });
 
 test("the session word bank is deterministic with host randomness and exhausts before repeating", () => {

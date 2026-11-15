@@ -18,11 +18,8 @@ export const BAD_DRAW = Object.freeze({
   ink: "#233c36",
   undo: 2,
   clear: 1,
-  cursorSpeed: 530,
-  deadZone: 0.15,
   sampleMs: 1000 / 120,
   sampleDistance: 5,
-  maxSampleGap: 100,
   urgentSeconds: 10,
 });
 
@@ -121,12 +118,4 @@ export function roundResult(
     remaining,
     score: success ? Math.round((100 * remaining) / duration) : 0,
   };
-}
-
-/** Radial dead zone, preserving analog speed and diagonal direction. */
-export function drawStick(x, y, deadZone = BAD_DRAW.deadZone) {
-  const length = Math.hypot(x, y);
-  if (length <= deadZone) return { x: 0, y: 0 };
-  const scale = (Math.min(1, length) - deadZone) / ((1 - deadZone) * length);
-  return { x: x * scale, y: y * scale };
 }

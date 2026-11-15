@@ -2,8 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#e8e5d9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>Drunk Drawing</title>
   </head>
   <body>
@@ -27,17 +29,17 @@
               <option value="normal" selected>Normal</option>
               <option value="hard">Hard</option>
             </select>
-            <small>Difficulty presets are still being tuned.</small>
+            <small data-difficulty-note></small>
           </div>
           <strong class="secret-word" data-word hidden></strong>
           <div class="actions">
             <button type="button" data-peek hidden>
-              Hold to reveal <kbd>RT / Space</kbd>
+              Hold to reveal
             </button>
             <button type="button" class="primary" data-next>
-              Continue <kbd>A</kbd>
+              Continue
             </button>
-            <button type="button" data-leave hidden>Back <kbd>B</kbd></button>
+            <button type="button" data-leave hidden>Back</button>
           </div>
         </div>
       </section>
@@ -47,7 +49,7 @@
           <div class="bad-draw-clock">
             <span>Time left</span><strong data-time role="timer"></strong>
           </div>
-          <button type="button" data-exit>Exit round <kbd>Menu</kbd></button>
+          <button type="button" data-exit>Exit round</button>
         </header>
         <div class="workspace">
           <div class="paper-column">
@@ -65,16 +67,16 @@
               </div>
             </div>
             <footer>
-              <p>Drag to draw <span>·</span> <kbd>Stick + RT</kbd></p>
+              <p>Drag your finger to draw</p>
               <div class="actions">
                 <button type="button" data-undo>
-                  Undo · <span></span> <kbd>X</kbd>
+                  Undo · <span></span>
                 </button>
                 <button type="button" data-clear>
-                  Clear · <span></span> <kbd>Y</kbd>
+                  Clear · <span></span>
                 </button>
                 <button type="button" class="primary" data-correct>
-                  Correct! <kbd>A</kbd>
+                  Correct!
                 </button>
               </div>
             </footer>
@@ -102,7 +104,7 @@
           </div>
         </dl>
         <button type="button" class="primary" data-again>
-          Play again <kbd>A</kbd>
+          Play again
         </button>
       </section>
     </main>
