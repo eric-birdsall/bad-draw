@@ -239,6 +239,182 @@ footer {
   pointer-events: none;
 }
 
+/* Drunk meter: a tall glass of beer, as tall as the paper, that drains as
+   the round goes on. --level runs from 1 (full) to 0 (empty). */
+.paper-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.7rem;
+}
+.drunk-meter {
+  --level: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 0;
+}
+.mug {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 40px;
+  border: 3px solid var(--ink);
+  border-bottom-width: 9px;
+  border-radius: 6px 6px 9px 9px;
+  background: #fffdf4;
+  transform-origin: 50% 100%;
+}
+/* Glass shine */
+.mug::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 5px;
+  top: 4%;
+  bottom: 5%;
+  width: 3px;
+  border-radius: 2px;
+  background: #fff;
+  opacity: 0.55;
+}
+.mug-inside {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 3px;
+}
+.beer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--level) * 93%);
+  border-top: 7px solid #fbf6e6;
+  background:
+    radial-gradient(circle, #fbe3a0 1.6px, transparent 2.1px) 0 0 / 15px 41px,
+    radial-gradient(circle, #fbe3a0 1.2px, transparent 1.7px) 8px 21px / 15px
+      41px,
+    linear-gradient(
+      90deg,
+      transparent 62%,
+      #c98b1c73 62% 80%,
+      transparent 80%
+    ),
+    #e3a72f;
+  animation: bubbles 3s linear infinite;
+}
+/* Foam bumps on top of the head */
+.beer::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: 100%;
+  margin-bottom: 7px;
+  height: 7px;
+  background: radial-gradient(circle at 50% 100%, #fbf6e6 6px, transparent 6.5px) 0 0 / 11px 7px repeat-x;
+}
+@keyframes bubbles {
+  to {
+    background-position:
+      0 -41px,
+      8px -20px,
+      0 0,
+      0 0;
+  }
+}
+.drunk-meter span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pencil);
+}
+.drunk-meter.jolt .mug {
+  animation: mug-wobble 0.6s ease-out;
+}
+@keyframes mug-wobble {
+  20% {
+    rotate: var(--wobble);
+  }
+  45% {
+    rotate: calc(var(--wobble) * -0.5);
+  }
+  70% {
+    rotate: calc(var(--wobble) * 0.2);
+  }
+  100% {
+    rotate: 0deg;
+  }
+}
+
+/* Hiccup: a "hic!" pops by the pen, and the paper jolts the way the ink goes. */
+.bad-draw-hic {
+  position: absolute;
+  font: italic bold clamp(1.1rem, 2.6vw, 1.7rem) Georgia, serif;
+  color: var(--pencil);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+.bad-draw-hic.pop {
+  animation: hic-pop 0.9s ease-out;
+}
+.bad-draw-sheet.jolt {
+  animation: hic-jolt 0.32s ease-out;
+}
+@keyframes hic-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(var(--tilt));
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -60%) scale(1.25) rotate(var(--tilt));
+  }
+  35% {
+    transform: translate(-50%, -70%) scale(1) rotate(var(--tilt));
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(1) rotate(var(--tilt));
+  }
+}
+@keyframes hic-jolt {
+  15% {
+    translate: var(--jx) var(--jy);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bad-draw-sheet.jolt,
+  .drunk-meter.jolt .mug,
+  .beer {
+    animation: none;
+  }
+  .bad-draw-hic.pop {
+    animation-name: hic-fade;
+  }
+  @keyframes hic-fade {
+    0%,
+    70% {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(var(--tilt));
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(var(--tilt));
+    }
+  }
+}
+
 footer {
   margin-top: 0.8rem;
 }
@@ -319,6 +495,18 @@ footer p {
   .bad-draw-intro,
   .workspace {
     grid-template-columns: 1fr;
+  }
+  .paper-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+  .mug {
+    width: 26px;
+    border-width: 2px 2px 6px;
+  }
+  .drunk-meter span {
+    font-size: 0.56rem;
+    letter-spacing: 0;
   }
   .sketch-preview {
     width: min(70%, 240px);

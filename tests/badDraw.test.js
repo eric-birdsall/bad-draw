@@ -4,12 +4,16 @@ import {
   BAD_DRAW,
   createDrift,
   drawStick,
+  drunkenness,
   roundResult,
 } from "../shared/badDraw.js";
 import { BAD_DRAW_WORDS, createWordPicker } from "../shared/badDrawWords.js";
 
+const SOBER = { ...BAD_DRAW, ramp: 1, hiccups: 0 };
+const length = ({ x, y }) => Math.hypot(x, y);
+
 test("drift changes smoothly, varies by seed and stays within the logical ink offset", () => {
-  const drift = createDrift(41);
+  const drift = createDrift(41, SOBER);
   const points = Array.from({ length: 1201 }, (_, i) =>
     drift(i * BAD_DRAW.sampleMs),
   );
@@ -21,9 +25,82 @@ test("drift changes smoothly, varies by seed and stays within the logical ink of
     points.slice(1).every((point, i) => distance(point, points[i]) < 4),
   );
   assert.ok(points.some((point) => distance(point, points[0]) > 20));
-  assert.deepEqual(drift(1250), createDrift(41)(1250));
-  assert.notDeepEqual(drift(1250), createDrift(17)(1250));
+  assert.deepEqual(drift(1250), createDrift(41, SOBER)(1250));
+  assert.notDeepEqual(drift(1250), createDrift(17, SOBER)(1250));
   assert.notDeepEqual(drift(1250), drift(4250));
+});
+
+test("the drawer gets drunker: drift reaches further late in the round, smoothly", () => {
+  const config = { ...SOBER, ramp: 2 };
+  const { duration, sampleMs } = config;
+  const samples = (drift, from, to) =>
+    Array.from({ length: Math.round((to - from) / sampleMs) }, (_, i) =>
+      length(drift(from + i * sampleMs)),
+    );
+  const mean = (values) => values.reduce((a, b) => a + b) / values.length;
+  let early = 0,
+    late = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    const drift = createDrift(seed * 7919, config);
+    early += mean(samples(drift, 0, duration * 0.15));
+    late += mean(samples(drift, duration * 0.85, duration));
+    const all = Array.from({ length: duration / sampleMs }, (_, i) =>
+      drift(i * sampleMs),
+    );
+    assert.ok(all.every((p) => length(p) <= 2 * config.amplitude + 1e-9));
+    // Speeding up integrates the phase, so even the drunkest stretch is smooth.
+    assert.ok(
+      all
+        .slice(1)
+        .every(
+          (p, i) => Math.hypot(p.x - all[i].x, p.y - all[i].y) < 8,
+        ),
+    );
+  }
+  assert.ok(late > early * 1.5);
+  assert.ok(
+    Math.abs(drunkenness(duration / 2, duration, 2) - 1.5) < 1e-9 &&
+      drunkenness(-5, duration, 2) === 1 &&
+      drunkenness(duration * 3, duration, 2) === 2,
+  );
+});
+
+test("hiccups jolt the ink briefly, then the drift carries on as before", () => {
+  // 15 hiccups in a 60 s round: one in each 4 s stretch.
+  const config = { ...SOBER, hiccups: 15, duration: 60_000 };
+  const sober = createDrift(5, SOBER),
+    hic = createDrift(5, config);
+  const jolts = Array.from({ length: 60_000 / BAD_DRAW.sampleMs }, (_, i) => {
+    const t = i * BAD_DRAW.sampleMs;
+    const a = sober(t),
+      b = hic(t);
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  });
+  const active = jolts.filter((d) => d > 1e-9).length * BAD_DRAW.sampleMs;
+  // One hiccup per 4 s window, each lasting about hiccupMs.
+  assert.ok(Math.abs(active - 15 * config.hiccupMs) < 15 * 2 * BAD_DRAW.sampleMs);
+  assert.ok(Math.max(...jolts) > config.hiccupSize * 0.95);
+  assert.ok(Math.max(...jolts) <= config.hiccupSize + 1e-9);
+  assert.deepEqual(createDrift(5, { ...config, hiccups: 0 })(1234), sober(1234));
+  // The page is told about each hiccup once, by id, while it is happening.
+  const ids = new Set();
+  for (let t = 0; t < 60_000; t += BAD_DRAW.sampleMs) {
+    const h = hic.hiccup(t);
+    if (h) ids.add(h.id);
+    assert.equal(Boolean(h), jolts[Math.round(t / BAD_DRAW.sampleMs)] > 1e-9);
+  }
+  assert.equal(ids.size, 15);
+  assert.equal(sober.hiccup(1234), null);
+  // The default round gets exactly its hiccups, all before the clock runs out.
+  for (let seed = 1; seed <= 20; seed++) {
+    const drift = createDrift(seed);
+    const seen = new Set();
+    for (let t = 0; t < BAD_DRAW.duration; t += BAD_DRAW.sampleMs) {
+      const h = drift.hiccup(t);
+      if (h) seen.add(h.id);
+    }
+    assert.equal(seen.size, BAD_DRAW.hiccups);
+  }
 });
 
 test("the deadline beats a simultaneous Correct; the score uses remaining time", () => {
@@ -33,8 +110,8 @@ test("the deadline beats a simultaneous Correct; the score uses remaining time",
     remaining: end,
     score: 100,
   });
-  assert.equal(roundResult(true, end, 15_000).score, 75);
-  assert.equal(roundResult(true, end, 30_000).score, 50);
+  assert.equal(roundResult(true, end, end / 4).score, 75);
+  assert.equal(roundResult(true, end, end / 2).score, 50);
   assert.equal(roundResult(true, end, end - 1).success, true);
   assert.deepEqual(roundResult(true, end, end), {
     success: false,

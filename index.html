@@ -51,9 +51,18 @@
         </header>
         <div class="workspace">
           <div class="paper-column">
-            <div class="bad-draw-sheet">
-              <canvas aria-label="Drawing paper"></canvas>
-              <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
+            <div class="paper-row">
+              <div class="drunk-meter" role="img" aria-label="Drunk meter: Sober">
+                <span data-drunk>Sober</span>
+                <div class="mug" aria-hidden="true">
+                  <div class="mug-inside"><div class="beer"></div></div>
+                </div>
+              </div>
+              <div class="bad-draw-sheet">
+                <canvas aria-label="Drawing paper"></canvas>
+                <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
+                <span class="bad-draw-hic" aria-hidden="true">hic!</span>
+              </div>
             </div>
             <footer>
               <p>Drag to draw <span>·</span> <kbd>Stick + RT</kbd></p>

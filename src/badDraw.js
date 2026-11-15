@@ -37,6 +37,39 @@ const DEV_SLIDERS = [
     unit: "",
   },
   {
+    key: "lean",
+    label: "Slow lean",
+    min: 0,
+    max: 1,
+    step: 0.05,
+    unit: "",
+  },
+  {
+    key: "ramp",
+    label: "Drunker by the end",
+    min: 1,
+    max: 3,
+    step: 0.05,
+    unit: "×",
+  },
+  {
+    key: "hiccups",
+    label: "Hiccups per round",
+    min: 0,
+    max: 20,
+    step: 1,
+    unit: "",
+    format: (value) => (value ? `${value}` : "off"),
+  },
+  {
+    key: "hiccupSize",
+    label: "Hiccup size",
+    min: 0,
+    max: 150,
+    step: 1,
+    unit: " px",
+  },
+  {
     key: "cursorSpeed",
     label: "Stick speed",
     min: 100,
@@ -90,6 +123,17 @@ let owner,
   revealKey = false,
   revealPad = false;
 let intended, previousFrame, padIndex, previousPad;
+let drift, roundStart, lastHiccup;
+const sheet = play.querySelector(".bad-draw-sheet");
+const hic = play.querySelector(".bad-draw-hic");
+const meter = play.querySelector(".drunk-meter");
+const DRUNK_WORDS = [
+  [0.9, "Wasted"],
+  [0.7, "Drunk"],
+  [0.45, "Buzzed"],
+  [0.2, "Tipsy"],
+  [0, "Sober"],
+];
 
 const resultCard = root.querySelector(".result-card");
 const snapshot = resultCard.querySelector("img");
@@ -107,13 +151,14 @@ devControls.innerHTML = DEV_SLIDERS.map(
 `,
 ).join("");
 
-const controls = DEV_SLIDERS.map(({ key, unit }) => {
+const controls = DEV_SLIDERS.map(({ key, unit, format }) => {
   const input = root.querySelector(`#tune-${key}`);
   const output = input.previousElementSibling;
   function update() {
     tuning[key] = input.valueAsNumber;
-    output.value =
-      (key === "duration" ? tuning[key] / 1000 : tuning[key]) + unit;
+    output.value = format
+      ? format(tuning[key])
+      : (key === "duration" ? tuning[key] / 1000 : tuning[key]) + unit;
   }
   listen(input, "input", update);
   return (defaults) => {
@@ -225,10 +270,18 @@ function go() {
     intro.hidden = true;
     play.hidden = false;
     ink.resize();
-    ink.reset(
-      createDrift(Math.floor(Math.random() * 0x100000000), tuning),
-      now,
+    drift = createDrift(
+      Math.floor(Math.random() * 0x100000000),
+      tuning,
+      roundDuration,
     );
+    roundStart = now;
+    lastHiccup = undefined;
+    hic.classList.remove("pop");
+    sheet.classList.remove("jolt");
+    meter.classList.remove("jolt");
+    updateMeter(now);
+    ink.reset(drift, now);
     cursor.hidden = true;
     updateTools();
     updateClock(now);
@@ -306,16 +359,18 @@ function moveCursor(x, y) {
 }
 
 function pointerPoint(event, rect) {
+  // Let the aim leave the paper by as far as the ink can drift back onto it.
+  const reach = tuning.amplitude * Math.max(1, tuning.ramp);
   return {
     x: clamp(
       ((event.clientX - rect.left) * C.width) / rect.width,
-      -tuning.amplitude,
-      C.width + tuning.amplitude,
+      -reach,
+      C.width + reach,
     ),
     y: clamp(
       ((event.clientY - rect.top) * C.height) / rect.height,
-      -tuning.amplitude,
-      C.height + tuning.amplitude,
+      -reach,
+      C.height + reach,
     ),
   };
 }
@@ -492,9 +547,48 @@ function readPad(now, dt) {
   }
 }
 
+/** Pop a "hic!" beside the pen, on the side the ink is jolted toward. */
+function showHiccup({ angle }) {
+  const dx = Math.cos(angle),
+    dy = Math.sin(angle);
+  const x = clamp(intended.x + dx * 60, C.width * 0.06, C.width * 0.94);
+  const y = clamp(intended.y + dy * 60, C.height * 0.1, C.height * 0.9);
+  hic.style.left = `${(100 * x) / C.width}%`;
+  hic.style.top = `${(100 * y) / C.height}%`;
+  hic.style.setProperty("--tilt", `${Math.round(dx * 14)}deg`);
+  sheet.style.setProperty("--jx", `${(dx * 6).toFixed(1)}px`);
+  sheet.style.setProperty("--jy", `${(dy * 6).toFixed(1)}px`);
+  meter.style.setProperty("--wobble", `${dx < 0 ? -7 : 7}deg`);
+  // Restart the animations even if the last one hasn't finished.
+  for (const el of [hic, sheet, meter]) el.classList.remove("pop", "jolt");
+  void hic.offsetWidth;
+  hic.classList.add("pop");
+  sheet.classList.add("jolt");
+  meter.classList.add("jolt");
+}
+
+/** Drain the mug as the round goes on: the more you've drunk, the drunker. */
+function updateMeter(now) {
+  const drunk = clamp((now - roundStart) / roundDuration, 0, 1);
+  meter.style.setProperty("--level", (1 - drunk).toFixed(4));
+  const word = DRUNK_WORDS.find(([from]) => drunk >= from)[1];
+  if (get("drunk").textContent !== word) {
+    get("drunk").textContent = word;
+    meter.setAttribute("aria-label", `Drunk meter: ${word}`);
+  }
+}
+
 function tick(now) {
   if (phase === PHASE.PLAYING && now >= deadline) finish(false, now);
-  if (phase === PHASE.PLAYING) updateClock(now);
+  if (phase === PHASE.PLAYING) {
+    updateClock(now);
+    updateMeter(now);
+    const hiccup = drift.hiccup(now - roundStart);
+    if (hiccup && hiccup.id !== lastHiccup) {
+      lastHiccup = hiccup.id;
+      showHiccup(hiccup);
+    }
+  }
   if (document.hasFocus() && !document.hidden) {
     readPad(now, clamp(now - previousFrame, 0, C.maxSampleGap) / 1000);
   }
