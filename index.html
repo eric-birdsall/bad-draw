@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#e8e5d9" />
+    <title>Bad Draw</title>
+  </head>
+  <body>
+    <main class="bad-draw">
+      <header class="masthead">
+        <h1>Bad Draw<span aria-hidden="true">✳</span></h1>
+        <p>Draw the word. Fight the wobble.</p>
+      </header>
+
+      <section class="bad-draw-intro">
+        <div class="sketch-preview" aria-hidden="true">
+          <canvas width="480" height="340" data-preview></canvas>
+        </div>
+        <div class="round-setup">
+          <h2 data-heading></h2>
+          <p data-description></p>
+          <div class="difficulty" data-setup>
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty" data-difficulty>
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+            <small>Difficulty presets are still being tuned.</small>
+          </div>
+          <strong class="secret-word" data-word hidden></strong>
+          <div class="actions">
+            <button type="button" data-peek hidden>
+              Hold to reveal <kbd>RT / Space</kbd>
+            </button>
+            <button type="button" class="primary" data-next>
+              Continue <kbd>A</kbd>
+            </button>
+            <button type="button" data-leave hidden>Back <kbd>B</kbd></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="bad-draw-play" hidden aria-label="Drawing round">
+        <header class="round-bar">
+          <div class="bad-draw-clock">
+            <span>Time left</span><strong data-time role="timer"></strong>
+          </div>
+          <button type="button" data-exit>Exit round <kbd>Menu</kbd></button>
+        </header>
+        <div class="workspace">
+          <div class="paper-column">
+            <div class="bad-draw-sheet">
+              <canvas aria-label="Drawing paper"></canvas>
+              <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
+            </div>
+            <footer>
+              <p>Drag to draw <span>·</span> <kbd>Stick + RT</kbd></p>
+              <div class="actions">
+                <button type="button" data-undo>
+                  Undo · <span></span> <kbd>X</kbd>
+                </button>
+                <button type="button" data-clear>
+                  Clear · <span></span> <kbd>Y</kbd>
+                </button>
+                <button type="button" class="primary" data-correct>
+                  Correct! <kbd>A</kbd>
+                </button>
+              </div>
+            </footer>
+          </div>
+          <aside class="bad-draw-dev" aria-labelledby="dev-title">
+            <h2 id="dev-title">Dev panel</h2>
+            <div class="bad-draw-dev-controls"></div>
+            <button type="button" data-dev-reset>Reset defaults</button>
+          </aside>
+        </div>
+      </section>
+
+      <section class="result-card" hidden aria-labelledby="result-heading">
+        <p data-outcome></p>
+        <h2 id="result-heading" data-answer></h2>
+        <img class="bad-draw-snapshot" alt="Final drawing" />
+        <dl class="result-stats">
+          <div>
+            <dt>Points</dt>
+            <dd data-score></dd>
+          </div>
+          <div>
+            <dt>Time left</dt>
+            <dd data-remaining></dd>
+          </div>
+        </dl>
+        <button type="button" class="primary" data-again>
+          Play again <kbd>A</kbd>
+        </button>
+      </section>
+    </main>
+    <script type="module" src="/src/badDraw.js"></script>
+  </body>
+</html>
