@@ -245,9 +245,6 @@ footer {
 footer {
   justify-content: space-between;
 }
-.round-bar {
-  margin-bottom: 0.8rem;
-}
 .bad-draw-clock {
   display: flex;
   align-items: baseline;
@@ -261,11 +258,33 @@ footer {
   color: var(--pencil);
 }
 
-.workspace {
+/* While drawing, drop the masthead and give the paper every pixel between
+   the top bar and the buttons. The paper's shape is set per round in JS. */
+.bad-draw.playing .masthead {
+  display: none;
+}
+.bad-draw.playing {
+  width: calc(100% - 1.5rem);
+  max-width: none;
+  height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
+  padding-block: 0.6rem;
+  display: flex;
+  flex-direction: column;
+}
+.bad-draw.playing .bad-draw-play {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.paper-space {
+  flex: 1 1 0;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: 1rem;
+  place-items: center;
 }
 
 .bad-draw-sheet {
@@ -275,22 +294,10 @@ footer {
 .bad-draw-sheet canvas {
   display: block;
   width: 100%;
-  aspect-ratio: 8 / 5;
+  height: 100%;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-}
-/* While drawing, drop the masthead and keep the paper on screen even on a
-   phone held sideways. */
-.bad-draw.playing .masthead {
-  display: none;
-}
-.bad-draw.playing {
-  padding-block: 0.75rem;
-}
-.paper-row {
-  max-width: calc((100dvh - 10rem) * 1.6 + 4rem);
-  margin-inline: auto;
 }
 
 .bad-draw-cursor {
@@ -303,41 +310,37 @@ footer {
   pointer-events: none;
 }
 
-/* Drunk meter: a tall glass of beer, as tall as the paper, that drains as
-   the round goes on. --level runs from 1 (full) to 0 (empty). */
-.paper-row {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 0.7rem;
+/* Drunk meter: a glass of beer on its side in the top bar, draining toward
+   its base as the round goes on. --level runs from 1 (full) to 0 (empty). */
+.round-bar {
+  flex-wrap: nowrap;
 }
 .drunk-meter {
   --level: 1;
+  flex: 1 1 auto;
+  max-width: 34rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  min-height: 0;
+  gap: 0.6rem;
 }
 .mug {
   position: relative;
   flex: 1 1 0;
-  min-height: 0;
-  width: 40px;
+  height: 30px;
   border: 3px solid var(--ink);
-  border-bottom-width: 9px;
-  border-radius: 6px 6px 9px 9px;
+  border-left-width: 9px;
+  border-radius: 9px 6px 6px 9px;
   background: #fffdf4;
-  transform-origin: 50% 100%;
 }
 /* Glass shine */
 .mug::before {
   content: "";
   position: absolute;
   z-index: 1;
-  left: 5px;
-  top: 4%;
-  bottom: 5%;
-  width: 3px;
+  top: 4px;
+  left: 4%;
+  right: 5%;
+  height: 3px;
   border-radius: 2px;
   background: #fff;
   opacity: 0.55;
@@ -350,46 +353,48 @@ footer {
 }
 .beer {
   position: absolute;
-  left: 0;
-  right: 0;
+  top: 0;
   bottom: 0;
-  height: calc(var(--level) * 93%);
-  border-top: 7px solid #fbf6e6;
+  left: 0;
+  width: calc(var(--level) * 96%);
+  border-right: 6px solid #fbf6e6;
   background:
-    radial-gradient(circle, #fbe3a0 1.6px, transparent 2.1px) 0 0 / 15px 41px,
-    radial-gradient(circle, #fbe3a0 1.2px, transparent 1.7px) 8px 21px / 15px
-      41px,
+    radial-gradient(circle, #fbe3a0 1.6px, transparent 2.1px) 0 0 / 41px 15px,
+    radial-gradient(circle, #fbe3a0 1.2px, transparent 1.7px) 21px 8px / 41px
+      15px,
     linear-gradient(
-      90deg,
-      transparent 62%,
-      #c98b1c73 62% 80%,
-      transparent 80%
+      0deg,
+      transparent 20%,
+      #c98b1c73 20% 38%,
+      transparent 38%
     ),
     #e3a72f;
   animation: bubbles 3s linear infinite;
 }
-/* Foam bumps on top of the head */
+/* Foam bumps on the head */
 .beer::before {
   content: "";
   position: absolute;
-  left: -4px;
-  right: -4px;
-  bottom: 100%;
-  margin-bottom: 7px;
-  height: 7px;
-  background: radial-gradient(circle at 50% 100%, #fbf6e6 6px, transparent 6.5px) 0 0 / 11px 7px repeat-x;
+  top: -4px;
+  bottom: -4px;
+  left: 100%;
+  margin-left: 6px;
+  width: 6px;
+  background: radial-gradient(circle at 0 50%, #fbf6e6 5px, transparent 5.5px) 0 0 / 6px 10px repeat-y;
 }
 @keyframes bubbles {
   to {
     background-position:
-      0 -41px,
-      8px -20px,
+      41px 0,
+      62px 8px,
       0 0,
       0 0;
   }
 }
 .drunk-meter span {
-  font-size: 0.72rem;
+  min-width: 4.2em;
+  text-align: right;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -400,13 +405,13 @@ footer {
 }
 @keyframes mug-wobble {
   20% {
-    rotate: var(--wobble);
+    rotate: calc(var(--wobble) * 0.3);
   }
   45% {
-    rotate: calc(var(--wobble) * -0.5);
+    rotate: calc(var(--wobble) * -0.15);
   }
   70% {
-    rotate: calc(var(--wobble) * 0.2);
+    rotate: calc(var(--wobble) * 0.06);
   }
   100% {
     rotate: 0deg;
@@ -479,9 +484,6 @@ footer {
   }
 }
 
-footer {
-  margin-top: 0.8rem;
-}
 footer p {
   color: var(--muted);
 }
@@ -546,7 +548,8 @@ footer p {
 }
 .bad-draw-snapshot {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 65dvh;
   margin: 1rem auto;
 }
 .result-stats {
@@ -565,20 +568,32 @@ footer p {
     width: calc(100% - 1.5rem);
     padding-top: 1rem;
   }
-  .bad-draw-intro,
-  .workspace {
+  .bad-draw-intro {
     grid-template-columns: 1fr;
   }
-  .paper-row {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 0.45rem;
+  .bad-draw.playing {
+    width: calc(100% - 1rem);
+    padding-block: 0.4rem;
+  }
+  .bad-draw.playing .bad-draw-play {
+    gap: 0.4rem;
+  }
+  .round-bar {
+    gap: 0.5rem;
+  }
+  .bad-draw-clock span {
+    display: none;
+  }
+  .drunk-meter {
+    gap: 0.35rem;
   }
   .mug {
-    width: 26px;
-    border-width: 2px 2px 6px;
+    height: 24px;
+    border-width: 2px 2px 2px 6px;
   }
   .drunk-meter span {
-    font-size: 0.56rem;
+    min-width: 0;
+    font-size: 0.62rem;
     letter-spacing: 0;
   }
   .sketch-preview {
@@ -594,6 +609,86 @@ footer p {
   }
   footer .actions button,
   .round-setup .actions button {
+    flex: 1 1 auto;
+  }
+}
+
+.result-card .actions {
+  justify-content: center;
+}
+
+/* Gallery: every finished round's drawing, pinned up like sketches. */
+.gallery {
+  width: min(60rem, 100% - 2rem);
+  max-height: calc(100% - 2rem);
+  background: #f3efe3;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  padding: 1rem 1.2rem 1.2rem;
+}
+.gallery::backdrop {
+  background: rgb(38 58 53 / 0.55);
+}
+.gallery h2 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+.gallery header p {
+  color: var(--muted);
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  align-items: center;
+  gap: 1.1rem;
+  margin: 1rem 0 1.2rem;
+}
+.gallery-grid:empty {
+  display: none;
+}
+.gallery-tile {
+  display: block;
+  padding: 0;
+  min-height: 0;
+  border: 1px solid #a8aa9b;
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: 2px 3px 0 #d3cfc0;
+  rotate: var(--tilt);
+  overflow: hidden;
+}
+.gallery-tile:not(:disabled):active {
+  background: var(--paper);
+  transform: scale(0.98);
+}
+.gallery-tile img,
+.gallery-viewer img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.gallery .actions {
+  justify-content: flex-end;
+}
+.gallery-list > .actions {
+  margin-top: 1rem;
+}
+.gallery-list > .actions > :first-child {
+  margin-right: auto;
+}
+.gallery-viewer img {
+  max-height: calc(100dvh - 10rem);
+  object-fit: contain;
+  margin-bottom: 1rem;
+  border: 1px solid #a8aa9b;
+  box-shadow: 2px 3px 0 #ddd7c4;
+}
+[data-gallery-clear].armed {
+  border-color: var(--pencil);
+  color: var(--pencil);
+}
+@media (max-width: 680px) {
+  .gallery .actions button {
     flex: 1 1 auto;
   }
 }

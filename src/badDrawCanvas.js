@@ -1,12 +1,14 @@
 import { BAD_DRAW as C } from "../shared/badDraw.js";
 
 /** Paint and retain actual ink points. The backing store can be rebuilt at
- * any display size without re-sampling drift or changing the geometry. */
+ * any display size without re-sampling drift or changing the geometry.
+ * `size` is the paper in game units; each round picks its own shape. */
 export function createDrawingCanvas(canvas) {
   const ctx = canvas.getContext("2d");
   const strokes = [];
   let stroke, previous, drift, startTime;
   let strokeWidth = C.strokeWidth;
+  let size = { width: C.width, height: C.height };
 
   const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
   function dot(p) {
@@ -38,7 +40,7 @@ export function createDrawingCanvas(canvas) {
   }
 
   function redraw() {
-    ctx.clearRect(0, 0, C.width, C.height);
+    ctx.clearRect(0, 0, size.width, size.height);
     for (const { points, width } of strokes) {
       ctx.lineWidth = strokeWidth = width;
       dot(points[0]);
@@ -67,10 +69,10 @@ export function createDrawingCanvas(canvas) {
 
   function style() {
     ctx.setTransform(
-      canvas.width / C.width,
+      canvas.width / size.width,
       0,
       0,
-      canvas.height / C.height,
+      canvas.height / size.height,
       0,
       0,
     );
@@ -121,8 +123,10 @@ export function createDrawingCanvas(canvas) {
     get hasInk() {
       return strokes.length > 0;
     },
-    reset(newDrift, now) {
+    reset(newDrift, now, newSize = size) {
       end();
+      size = { ...newSize };
+      style();
       strokes.length = 0;
       drift = newDrift;
       startTime = now;

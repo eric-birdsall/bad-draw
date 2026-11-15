@@ -7,6 +7,7 @@ import {
 import { createWordPicker, wordsAt } from "../shared/badDrawWords.js";
 import { createDrawingCanvas } from "./badDrawCanvas.js";
 import { drawCover } from "./cover.js";
+import { createGallery } from "./gallery.js";
 import "./badDraw.css";
 
 // Medium is the shared default. Easy is a gentle sway with room for mistakes;
@@ -19,13 +20,13 @@ const PRESETS = {
     ramp: 1.2,
     hiccups: 2,
     hiccupSize: 18,
-    duration: 90_000,
+    duration: 75_000,
     undo: 4,
     clear: 2,
-    note: "Gentle sway, 2 hiccups, 90 seconds, 4 undos",
+    note: "Gentle sway, 2 hiccups, 75 seconds, 4 undos",
   },
   medium: {
-    note: "Steady wobble, 4 hiccups, 60 seconds, 2 undos",
+    note: "Steady wobble, 4 hiccups, 45 seconds, 2 undos",
   },
   hard: {
     amplitude: 30,
@@ -34,16 +35,15 @@ const PRESETS = {
     ramp: 1.75,
     hiccups: 7,
     hiccupSize: 52,
-    duration: 45_000,
+    duration: 30_000,
     undo: 1,
     clear: 1,
-    note: "Big lurches, 7 hiccups, 45 seconds, 1 undo",
+    note: "Big lurches, 7 hiccups, 30 seconds, 1 undo",
   },
 };
 const RULES =
   "Pick a drawer. Sketch the secret word while everyone else guesses aloud. No talking or writing letters.";
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-const center = () => ({ x: C.width / 2, y: C.height / 2 });
 
 // Temporary controls. All slider values use the same units as the game.
 const DEV_SLIDERS = [
@@ -124,14 +124,35 @@ const intro = root.querySelector(".bad-draw-intro");
 const play = root.querySelector(".bad-draw-play");
 const canvas = play.querySelector("canvas");
 const cursor = play.querySelector(".bad-draw-cursor");
+const sheet = play.querySelector(".bad-draw-sheet");
 const ink = createDrawingCanvas(canvas);
 const listen = (target, name, handler) =>
   target.addEventListener(name, handler);
-const resize = new ResizeObserver(() => ink.resize());
+const space = play.querySelector(".paper-space");
+// The paper's shape in game units, chosen at the start of each round to fill
+// the free space. Its height stays fixed so the drift feels the same.
+let paper = { width: C.width, height: C.height };
+const center = () => ({ x: paper.width / 2, y: paper.height / 2 });
+
+function fitPaper(newRound) {
+  const { width, height } = space.getBoundingClientRect();
+  if (!width || !height) return;
+  if (newRound) {
+    const aspect = clamp(width / height, 0.3, 4);
+    paper = { width: Math.round(C.height * aspect), height: C.height };
+  }
+  // Fill the space; if it changes shape mid-round, fit inside it instead.
+  const scale = Math.min(width / paper.width, height / paper.height);
+  sheet.style.width = `${Math.floor(paper.width * scale)}px`;
+  sheet.style.height = `${Math.floor(paper.height * scale)}px`;
+}
+const resize = new ResizeObserver(() => {
+  if (phase === PHASE.PLAYING) fitPaper(false);
+  ink.resize();
+});
 let phase, word, deadline, roundDuration, undoLeft, clearLeft, lastSecond;
 let pointerId, revealId, intended;
 let drift, roundStart, lastHiccup;
-const sheet = play.querySelector(".bad-draw-sheet");
 const hic = play.querySelector(".bad-draw-hic");
 const meter = play.querySelector(".drunk-meter");
 const DRUNK_WORDS = [
@@ -198,6 +219,19 @@ listen(settings, "click", (event) => {
 });
 resetTuning();
 
+const galleryButtons = root.querySelectorAll("[data-gallery-open]");
+const menuGallery = get("setup").parentElement.querySelector("[data-gallery-open]");
+function updateGalleryButtons() {
+  for (const button of galleryButtons)
+    button.querySelector("span").textContent = gallery.size;
+  // On the menu, only between rounds and once there is something to see.
+  menuGallery.hidden = phase !== PHASE.READY || !gallery.size;
+}
+const gallery = createGallery(document.querySelector(".gallery"), {
+  onChange: updateGalleryButtons,
+});
+galleryButtons.forEach((button) => listen(button, "click", gallery.open));
+
 let audio;
 function unlockAudio() {
   if (!window.AudioContext) return;
@@ -233,6 +267,7 @@ function ready() {
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES;
   get("next").textContent = "Continue";
+  updateGalleryButtons();
 }
 
 function showWord() {
@@ -263,6 +298,7 @@ function reveal() {
     "Drawer, hold to peek. Let go before you start the clock.";
   get("peek").hidden = false;
   get("next").textContent = "Start drawing";
+  updateGalleryButtons();
 }
 
 function go() {
@@ -278,10 +314,11 @@ function go() {
     lastSecond = undefined;
     undoLeft = tuning.undo;
     clearLeft = tuning.clear;
-    intended = center();
     intro.hidden = true;
     play.hidden = false;
     root.classList.add("playing");
+    fitPaper(true);
+    intended = center();
     ink.resize();
     drift = createDrift(
       Math.floor(Math.random() * 0x100000000),
@@ -294,7 +331,7 @@ function go() {
     sheet.classList.remove("jolt");
     meter.classList.remove("jolt");
     updateMeter(now);
-    ink.reset(drift, now);
+    ink.reset(drift, now, paper);
     cursor.hidden = true;
     updateTools();
     updateClock(now);
@@ -311,6 +348,7 @@ function finish(correct, now = performance.now()) {
   play.hidden = true;
   root.classList.remove("playing");
   snapshot.src = canvas.toDataURL();
+  gallery.add(canvas, { word, ...result });
   sound(result.success ? 540 : 230, 0.18);
   if (result.success) sound(760, 0.2, 0.11);
   get("answer").textContent = word;
@@ -366,8 +404,8 @@ function tool(action) {
 function moveCursor(x, y) {
   intended = { x, y };
   cursor.hidden = false;
-  cursor.style.left = `${(100 * x) / C.width}%`;
-  cursor.style.top = `${(100 * y) / C.height}%`;
+  cursor.style.left = `${(100 * x) / paper.width}%`;
+  cursor.style.top = `${(100 * y) / paper.height}%`;
 }
 
 function pointerPoint(event, rect) {
@@ -375,14 +413,14 @@ function pointerPoint(event, rect) {
   const reach = tuning.amplitude * Math.max(1, tuning.ramp);
   return {
     x: clamp(
-      ((event.clientX - rect.left) * C.width) / rect.width,
+      ((event.clientX - rect.left) * paper.width) / rect.width,
       -reach,
-      C.width + reach,
+      paper.width + reach,
     ),
     y: clamp(
-      ((event.clientY - rect.top) * C.height) / rect.height,
+      ((event.clientY - rect.top) * paper.height) / rect.height,
       -reach,
-      C.height + reach,
+      paper.height + reach,
     ),
   };
 }
@@ -462,10 +500,10 @@ listen(document, "visibilitychange", () => {
 function showHiccup({ angle }) {
   const dx = Math.cos(angle),
     dy = Math.sin(angle);
-  const x = clamp(intended.x + dx * 60, C.width * 0.06, C.width * 0.94);
-  const y = clamp(intended.y + dy * 60, C.height * 0.1, C.height * 0.9);
-  hic.style.left = `${(100 * x) / C.width}%`;
-  hic.style.top = `${(100 * y) / C.height}%`;
+  const x = clamp(intended.x + dx * 60, paper.width * 0.06, paper.width * 0.94);
+  const y = clamp(intended.y + dy * 60, paper.height * 0.1, paper.height * 0.9);
+  hic.style.left = `${(100 * x) / paper.width}%`;
+  hic.style.top = `${(100 * y) / paper.height}%`;
   hic.style.setProperty("--tilt", `${Math.round(dx * 14)}deg`);
   sheet.style.setProperty("--jx", `${(dx * 6).toFixed(1)}px`);
   sheet.style.setProperty("--jy", `${(dy * 6).toFixed(1)}px`);
@@ -510,6 +548,7 @@ get("leave").onclick = get("exit").onclick = get("again").onclick = ready;
 get("correct").onclick = () => finish(true);
 get("undo").onclick = () => tool("undo");
 get("clear").onclick = () => tool("clear");
+resize.observe(space);
 resize.observe(canvas);
 drawCover(get("preview"));
 ready();

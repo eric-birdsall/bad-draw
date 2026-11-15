@@ -58,6 +58,9 @@
               Continue
             </button>
             <button type="button" data-leave hidden>Back</button>
+            <button type="button" data-gallery-open hidden>
+              Gallery · <span></span>
+            </button>
           </div>
         </div>
       </section>
@@ -67,39 +70,35 @@
           <div class="bad-draw-clock">
             <span>Time left</span><strong data-time role="timer"></strong>
           </div>
+          <div class="drunk-meter" role="img" aria-label="Drunk meter: Sober">
+            <span data-drunk>Sober</span>
+            <div class="mug" aria-hidden="true">
+              <div class="mug-inside"><div class="beer"></div></div>
+            </div>
+          </div>
           <button type="button" data-exit>Exit round</button>
         </header>
-        <div class="workspace">
-          <div class="paper-column">
-            <div class="paper-row">
-              <div class="drunk-meter" role="img" aria-label="Drunk meter: Sober">
-                <span data-drunk>Sober</span>
-                <div class="mug" aria-hidden="true">
-                  <div class="mug-inside"><div class="beer"></div></div>
-                </div>
-              </div>
-              <div class="bad-draw-sheet">
-                <canvas aria-label="Drawing paper"></canvas>
-                <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
-                <span class="bad-draw-hic" aria-hidden="true">hic!</span>
-              </div>
-            </div>
-            <footer>
-              <p>Drag your finger to draw</p>
-              <div class="actions">
-                <button type="button" data-undo>
-                  Undo · <span></span>
-                </button>
-                <button type="button" data-clear>
-                  Clear · <span></span>
-                </button>
-                <button type="button" class="primary" data-correct>
-                  Correct!
-                </button>
-              </div>
-            </footer>
+        <div class="paper-space">
+          <div class="bad-draw-sheet">
+            <canvas aria-label="Drawing paper"></canvas>
+            <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
+            <span class="bad-draw-hic" aria-hidden="true">hic!</span>
           </div>
         </div>
+        <footer>
+          <p>Drag your finger to draw</p>
+          <div class="actions">
+            <button type="button" data-undo>
+              Undo · <span></span>
+            </button>
+            <button type="button" data-clear>
+              Clear · <span></span>
+            </button>
+            <button type="button" class="primary" data-correct>
+              Correct!
+            </button>
+          </div>
+        </footer>
       </section>
 
       <section class="result-card" hidden aria-labelledby="result-heading">
@@ -116,9 +115,14 @@
             <dd data-remaining></dd>
           </div>
         </dl>
-        <button type="button" class="primary" data-again>
-          Play again
-        </button>
+        <div class="actions">
+          <button type="button" data-gallery-open>
+            Gallery · <span></span>
+          </button>
+          <button type="button" class="primary" data-again>
+            Play again
+          </button>
+        </div>
       </section>
     </main>
 
@@ -131,6 +135,27 @@
           <button class="primary">Done</button>
         </div>
       </form>
+    </dialog>
+    <dialog class="gallery" aria-labelledby="gallery-title">
+      <div class="gallery-list" data-gallery-list>
+        <header>
+          <h2 id="gallery-title">Tonight’s drawings</h2>
+          <p data-gallery-summary></p>
+        </header>
+        <div class="gallery-grid" data-gallery-grid></div>
+        <div class="actions">
+          <button type="button" data-gallery-clear>Clear all</button>
+          <button type="button" data-gallery-share-all>Share all</button>
+          <button type="button" class="primary" data-gallery-close autofocus>Done</button>
+        </div>
+      </div>
+      <div class="gallery-viewer" data-gallery-viewer hidden>
+        <img data-gallery-big alt="" />
+        <div class="actions">
+          <button type="button" data-gallery-back>Back</button>
+          <button type="button" class="primary" data-gallery-share>Share</button>
+        </div>
+      </div>
     </dialog>
     <script type="module" src="/src/badDraw.js"></script>
   </body>

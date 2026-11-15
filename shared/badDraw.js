@@ -1,5 +1,5 @@
 export const BAD_DRAW = Object.freeze({
-  duration: 60_000,
+  duration: 45_000,
   width: 960,
   height: 600,
   amplitude: 18,
