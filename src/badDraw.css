@@ -191,15 +191,36 @@ footer {
   flex-wrap: wrap;
 }
 
+.round-setup .actions {
+  position: relative;
+}
+/* Floats above the peek button so the drawer's thumb doesn't cover it. */
 .secret-word {
-  display: block;
-  width: fit-content;
-  padding: 0.35rem 0.8rem;
-  margin-bottom: 1rem;
+  position: absolute;
+  bottom: calc(100% + 0.9rem);
+  left: 0;
+  z-index: 2;
+  max-width: 100%;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid var(--ink);
   background: #f8e8ab;
+  box-shadow: 4px 4px 0 rgba(38, 58, 53, 0.25);
   font:
-    bold 1.8rem Georgia,
+    bold 2.2rem Georgia,
     serif;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.secret-word::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 2.5rem;
+  border: 0.6rem solid transparent;
+  border-top-color: var(--ink);
+}
+.secret-word[hidden] {
+  display: none;
 }
 
 .round-bar,
