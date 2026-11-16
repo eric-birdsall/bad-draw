@@ -144,9 +144,21 @@ small {
   box-shadow: 2px 3px 0 var(--paper-shadow);
 }
 
+.kite-pair {
+  display: flex;
+  gap: clamp(0.75rem, 3vw, 1.75rem);
+  justify-content: center;
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+
 .sketch-preview {
+  flex: 1 1 0;
+  min-width: 0;
   transform: rotate(-2deg);
-  width: min(100%, 480px);
+}
+.sketch-preview.drunk {
+  transform: rotate(3deg) translateY(0.6rem);
 }
 
 .sketch-preview canvas {
@@ -669,9 +681,9 @@ footer p {
     font-size: 0.72rem;
     letter-spacing: 0.04em;
   }
-  .sketch-preview {
-    width: min(70%, 240px);
-    margin: 0.25rem auto;
+  .kite-pair {
+    width: min(84%, 320px);
+    margin: 0.25rem auto 0.75rem;
   }
   footer > p {
     display: none;
