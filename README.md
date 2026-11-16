@@ -6,7 +6,9 @@ Run `npm ci` and `npm run dev`, then open the URL Vite prints. Use `npm test` fo
 
 It is built for touch screens only (phones and tablets). There are no keyboard or controller controls.
 
-Pick a drawer and have everyone else look away. Press and hold **Hold to reveal**, then let go before starting the timer. Drag your finger on the paper to draw. The drawer can use **Undo** twice and **Clear** once. Tap **Correct!** when the group guesses the word. The final drawing and score appear when the round ends.
+Pick a mode on the main menu. In **Live** mode (the default) the team watches and guesses while the drawer draws. In **Reveal** mode the drawer draws alone for the whole round (or taps **Done drawing**), then the paper is covered. They pass the tablet to their team, who tap **Reveal** to see the drawing and start their own clock, the same length as the round. Only guessing time counts toward the score.
+
+Pick a drawer and have everyone else look away. Press and hold **Hold to reveal**, then let go before starting the timer. Drag your finger on the paper to draw. The drawer can use **Undo** twice and **Clear** once. Tap **Correct!** when the group guesses the word. The final drawing and score appear when the round ends; tap **Replay** to watch it being drawn again, sped up, with pauses between strokes shortened (see `replayDrawing` in `src/badDrawCanvas.js`). Tap the logo at any time to go back to the main menu.
 
 Every finished round's drawing goes into the **Gallery** (on the results card, and on the main menu between rounds), captioned with the word and the score. Tap a drawing to share or save it, or use **Share all** for one image with the whole night. Rounds left with **Exit round** aren't kept. The gallery lasts until you clear it or close the tab, and is kept across reloads when it fits in session storage (see `src/gallery.js`).
 

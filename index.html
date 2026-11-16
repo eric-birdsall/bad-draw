@@ -20,7 +20,11 @@
   <body>
     <main class="bad-draw">
       <header class="masthead">
-        <h1><img class="logo" src="/src/main-logo.png" alt="Drunk Drawing" /></h1>
+        <h1>
+          <button type="button" class="home-button" data-home aria-label="Drunk Drawing: back to the main menu">
+            <img class="logo" src="/src/main-logo.png" alt="" />
+          </button>
+        </h1>
         <button
           type="button"
           class="settings-button theme-toggle"
@@ -52,6 +56,15 @@
           <p data-description></p>
           <div class="setup-controls">
           <div class="difficulty" data-setup>
+            <div
+              class="difficulty-buttons mode-buttons"
+              role="radiogroup"
+              aria-label="Mode"
+              data-mode
+            >
+              <button type="button" role="radio" aria-checked="true" value="live">Live</button>
+              <button type="button" role="radio" aria-checked="false" value="reveal">Reveal</button>
+            </div>
             <div
               class="difficulty-buttons"
               role="radiogroup"
@@ -114,16 +127,24 @@
             <canvas aria-label="Drawing paper"></canvas>
             <span class="bad-draw-cursor" aria-hidden="true" hidden></span>
             <span class="bad-draw-hic" aria-hidden="true">hic!</span>
+            <div class="bad-draw-cover" data-cover hidden>
+              <p data-cover-title>Time’s up, drawer!</p>
+              <p>Pass it to your team. No peeking!</p>
+              <button type="button" class="primary" data-show>Reveal</button>
+            </div>
           </div>
         </div>
         <footer>
-          <p>Drag your finger to draw</p>
+          <p data-hint>Drag your finger to draw</p>
           <div class="actions">
             <button type="button" data-undo>
               Undo · <span></span>
             </button>
             <button type="button" data-clear>
               Clear · <span></span>
+            </button>
+            <button type="button" class="primary" data-done hidden>
+              Done drawing
             </button>
             <button type="button" class="primary" data-correct>
               Correct!
@@ -135,7 +156,10 @@
       <section class="result-card" hidden aria-labelledby="result-heading">
         <p data-outcome></p>
         <h2 id="result-heading" data-answer></h2>
-        <img class="bad-draw-snapshot" alt="Final drawing" />
+        <div class="snapshot-frame">
+          <img class="bad-draw-snapshot" alt="Final drawing" />
+          <canvas class="bad-draw-replay" aria-hidden="true" hidden></canvas>
+        </div>
         <dl class="result-stats">
           <div>
             <dt>Points</dt>
@@ -147,6 +171,7 @@
           </div>
         </dl>
         <div class="actions">
+          <button type="button" data-replay>Replay</button>
           <button type="button" data-gallery-open>
             Gallery · <span></span>
           </button>

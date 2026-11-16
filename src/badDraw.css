@@ -641,6 +641,27 @@ footer p {
   max-height: 65dvh;
   margin: 1rem auto;
 }
+/* The replay plays over the final drawing, the same size and paper. */
+.snapshot-frame {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1rem auto;
+}
+.snapshot-frame .bad-draw-snapshot {
+  margin: 0;
+}
+.bad-draw-replay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
+  background-size: 17px 17px;
+  border: 1px solid var(--paper-edge);
+  box-sizing: border-box;
+}
 .result-stats {
   display: flex;
   justify-content: center;
@@ -812,4 +833,59 @@ footer p {
 }
 [data-theme="light"] .theme-toggle .icon-moon {
   display: block;
+}
+
+/* The logo is a plain button home: no frame, just the picture. */
+.home-button,
+.home-button:not(:disabled):active {
+  display: block;
+  max-width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.home-button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Live or Reveal sits above the difficulty, stretched to the same width. */
+.mode-buttons {
+  flex-basis: 100%;
+  /* Don't count toward the menu's width (see .setup-controls). */
+  width: 0;
+  min-width: 100%;
+  margin-bottom: 0.4rem;
+}
+.mode-buttons button {
+  flex: 1 1 0;
+}
+
+/* Reveal mode: blank paper over the drawing until the team taps Reveal. */
+.bad-draw-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
+  background-size: 17px 17px;
+  color: var(--paper-ink);
+}
+.bad-draw-cover[hidden] {
+  display: none;
+}
+.bad-draw-cover [data-cover-title] {
+  font: bold clamp(1.8rem, 5vw, 3rem) Georgia, serif;
+}
+.bad-draw-cover [data-show] {
+  min-width: 12rem;
+  min-height: 4.5rem;
+  margin-top: 0.8rem;
+  font-size: 1.5rem;
 }

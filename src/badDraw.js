@@ -5,7 +5,7 @@ import {
   roundResult,
 } from "../shared/badDraw.js";
 import { createWordPicker, wordsAt } from "../shared/badDrawWords.js";
-import { createDrawingCanvas } from "./badDrawCanvas.js";
+import { createDrawingCanvas, replayDrawing } from "./badDrawCanvas.js";
 import { drawCover } from "./cover.js";
 import { createGallery } from "./gallery.js";
 import "./badDraw.css";
@@ -43,8 +43,11 @@ const PRESETS = {
     note: "Blackout wobble, 5 hiccups, 15 seconds, no undos",
   },
 };
-const RULES =
-  "Pick a drawer. Sketch the secret word while everyone else guesses aloud. No talking or writing letters.";
+const RULES = {
+  live: "Pick a drawer. Sketch the secret word while everyone else guesses aloud. No talking or writing letters.",
+  reveal:
+    "Pick a drawer. Sketch the secret word while nobody watches, then pass it to your team. They get the same time to guess.",
+};
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 // Temporary controls. All slider values use the same units as the game.
@@ -167,8 +170,47 @@ const DRUNK_WORDS = [
 
 const resultCard = root.querySelector(".result-card");
 const snapshot = resultCard.querySelector("img");
+const replayCanvas = resultCard.querySelector(".bad-draw-replay");
+// The finished round, kept so the results card can play it back.
+let lastRound, stopReplay;
+
+function endReplay() {
+  stopReplay?.();
+  stopReplay = undefined;
+  replayCanvas.hidden = true;
+  get("replay").textContent = "Replay";
+}
+
+function replay() {
+  if (phase !== PHASE.RESULTS || !lastRound?.log.length) return;
+  endReplay();
+  replayCanvas.hidden = false;
+  get("replay").textContent = "Replay again";
+  stopReplay = replayDrawing(replayCanvas, lastRound.log, lastRound.paper, {
+    onDone() {
+      stopReplay = undefined;
+      replayCanvas.hidden = true;
+    },
+  });
+}
 const difficultyButtons = get("difficulty").querySelectorAll("button");
 let difficulty = "medium";
+// Live: the team guesses while the drawer draws. Reveal: the drawer draws
+// alone, the drawing is covered, and the team taps Reveal to start guessing.
+let mode = "live";
+// Within a round: "draw", then in Reveal mode "pass" and "guess".
+let stage;
+const cover = get("cover");
+const modeButtons = get("mode").querySelectorAll("button");
+modeButtons.forEach((button) =>
+  button.addEventListener("click", () => {
+    mode = button.value;
+    modeButtons.forEach((other) =>
+      other.setAttribute("aria-checked", String(other === button)),
+    );
+    get("description").textContent = RULES[mode];
+  }),
+);
 const settings = document.querySelector(".bad-draw-dev");
 const devControls = settings.querySelector(".bad-draw-dev-controls");
 devControls.innerHTML = DEV_SLIDERS.map(
@@ -282,6 +324,9 @@ function sound(frequency, duration = 0.12, delay = 0) {
 
 function ready() {
   phase = PHASE.READY;
+  endReplay();
+  lastRound = undefined;
+  for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
   stopDrawing();
   hideWord();
   snapshot.removeAttribute("src");
@@ -291,7 +336,8 @@ function ready() {
   get("setup").hidden = get("settings").hidden = get("next").hidden = false;
   get("peek").hidden = get("leave").hidden = get("swap").hidden = true;
   get("heading").textContent = "Ready to draw?";
-  get("description").textContent = RULES;
+  get("description").textContent = RULES[mode];
+  cover.hidden = true;
   get("next").textContent = "Continue";
   updateGalleryButtons();
 }
@@ -340,6 +386,7 @@ function go() {
     reveal();
   } else if (phase === PHASE.REVEAL && !get("next").disabled) {
     phase = PHASE.PLAYING;
+    stage = "draw";
     hideWord();
     const now = performance.now();
     roundDuration = tuning.duration;
@@ -366,6 +413,8 @@ function go() {
     updateMeter(now);
     ink.reset(drift, now, paper);
     cursor.hidden = true;
+    cover.hidden = true;
+    showStage();
     updateTools();
     updateClock(now);
     sound(380);
@@ -373,14 +422,70 @@ function go() {
   }
 }
 
+/** Show the footer for this stage of the round. */
+function showStage() {
+  const drawing = stage === "draw";
+  get("undo").hidden = get("clear").hidden = !drawing;
+  get("done").hidden = !(drawing && mode === "reveal");
+  get("correct").hidden = drawing ? mode === "reveal" : stage !== "guess";
+  get("hint").textContent = drawing
+    ? "Drag your finger to draw"
+    : stage === "pass"
+      ? "Pass it to your team"
+      : "Guess what it is!";
+}
+
+/** Reveal mode: the drawer is done, so cover the paper for the hand-off. */
+function handOff() {
+  if (phase !== PHASE.PLAYING || stage !== "draw") return;
+  stage = "pass";
+  stopDrawing();
+  cursor.hidden = true;
+  hic.classList.remove("pop");
+  get("cover-title").textContent =
+    performance.now() >= deadline ? "Time’s up, drawer!" : "Done!";
+  cover.hidden = false;
+  // The guessing clock waits, full, until the team taps Reveal.
+  deadline = performance.now() + roundDuration;
+  lastSecond = undefined;
+  updateClock(performance.now());
+  showStage();
+  sound(420, 0.14);
+  sound(330, 0.18, 0.1);
+}
+
+/** Reveal mode: show the drawing and start the team's clock. */
+function showDrawing() {
+  if (phase !== PHASE.PLAYING || stage !== "pass") return;
+  stage = "guess";
+  cover.hidden = true;
+  const now = performance.now();
+  deadline = now + roundDuration;
+  lastSecond = undefined;
+  updateClock(now);
+  showStage();
+  sound(380);
+  sound(560, 0.16, 0.08);
+}
+
+/** The clock ran out: the drawer hands off in Reveal mode, else the round ends. */
+function timeUp(now) {
+  if (mode === "reveal" && stage === "draw") handOff();
+  else finish(false, now);
+}
+
 function finish(correct, now = performance.now()) {
   if (phase !== PHASE.PLAYING) return;
+  if (mode === "reveal" && stage !== "guess") return;
   const result = roundResult(correct, deadline, now, roundDuration);
   phase = PHASE.RESULTS;
   stopDrawing();
   play.hidden = true;
   root.classList.remove("playing");
   snapshot.src = canvas.toDataURL();
+  endReplay();
+  lastRound = { log: ink.log, paper: { ...paper } };
+  get("replay").hidden = !lastRound.log.length;
   gallery.add(canvas, { word, ...result });
   sound(result.success ? 540 : 230, 0.18);
   if (result.success) sound(760, 0.2, 0.11);
@@ -423,8 +528,8 @@ function stopDrawing() {
 }
 
 function tool(action) {
-  if (phase !== PHASE.PLAYING) return;
-  if (performance.now() >= deadline) return finish(false);
+  if (phase !== PHASE.PLAYING || stage !== "draw") return;
+  if (performance.now() >= deadline) return timeUp(performance.now());
   if (!ink.hasInk || (action === "undo" ? !undoLeft : !clearLeft)) return;
   stopDrawing();
   if (action === "undo") undoLeft--;
@@ -459,9 +564,10 @@ function pointerPoint(event, rect) {
 }
 
 listen(canvas, "pointerdown", (event) => {
-  if (phase !== PHASE.PLAYING || pointerId !== undefined) return;
+  if (phase !== PHASE.PLAYING || stage !== "draw" || pointerId !== undefined)
+    return;
   const now = performance.now();
-  if (now >= deadline) return finish(false, now);
+  if (now >= deadline) return timeUp(now);
   event.preventDefault();
   const { x, y } = pointerPoint(event, canvas.getBoundingClientRect());
   moveCursor(x, y);
@@ -474,7 +580,7 @@ listen(canvas, "pointerdown", (event) => {
 listen(canvas, "pointermove", (event) => {
   if (phase !== PHASE.PLAYING || event.pointerId !== pointerId) return;
   const now = performance.now();
-  if (now >= deadline) return finish(false, now);
+  if (now >= deadline) return timeUp(now);
   const rect = canvas.getBoundingClientRect();
   for (const sample of event.getCoalescedEvents?.() || []) {
     const p = pointerPoint(sample, rect);
@@ -488,7 +594,7 @@ listen(canvas, "pointermove", (event) => {
 listen(canvas, "pointerup", (event) => {
   if (event.pointerId !== pointerId) return;
   const now = performance.now();
-  if (now >= deadline) return finish(false, now);
+  if (now >= deadline) return timeUp(now);
   const { x, y } = pointerPoint(event, canvas.getBoundingClientRect());
   ink.advance(x, y, now);
   stopDrawing();
@@ -572,9 +678,12 @@ function updateMeter(now) {
 }
 
 function tick(now) {
-  if (phase === PHASE.PLAYING && now >= deadline) finish(false, now);
-  if (phase === PHASE.PLAYING) {
-    updateClock(now);
+  // While the tablet is passed, the guessing clock waits.
+  if (phase === PHASE.PLAYING && stage !== "pass") {
+    if (now >= deadline) timeUp(now);
+    if (phase === PHASE.PLAYING && stage !== "pass") updateClock(now);
+  }
+  if (phase === PHASE.PLAYING && stage === "draw") {
     updateMeter(now);
     const hiccup = drift.hiccup(now - roundStart);
     if (hiccup && hiccup.id !== lastHiccup) {
@@ -590,6 +699,11 @@ function tick(now) {
 get("next").onclick = go;
 get("leave").onclick = get("exit").onclick = get("again").onclick = ready;
 get("correct").onclick = () => finish(true);
+get("done").onclick = handOff;
+get("show").onclick = showDrawing;
+get("replay").onclick = replay;
+// The logo always goes home, from any screen, dropping a round in progress.
+get("home").onclick = ready;
 get("undo").onclick = () => tool("undo");
 get("clear").onclick = () => tool("clear");
 resize.observe(space);
