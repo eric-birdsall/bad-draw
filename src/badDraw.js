@@ -126,18 +126,6 @@ const pickWord = createWordPicker({ words: wordsAt(["easy", "medium"]) });
 
 const get = (key) => root.querySelector(`[data-${key}]`);
 const intro = root.querySelector(".bad-draw-intro");
-
-// Version and last-commit date, injected by vite.config.js.
-{
-  const { version, commit, date } = __BUILD__;
-  const day = new Date(date).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-  get("build").textContent = `Version ${version} · Last updated ${day}`;
-  if (commit) get("build").title = `Commit ${commit}`;
-}
 const play = root.querySelector(".bad-draw-play");
 const canvas = play.querySelector("canvas");
 const cursor = play.querySelector(".bad-draw-cursor");
@@ -346,7 +334,6 @@ function ready() {
   root.classList.remove("playing");
   intro.hidden = false;
   get("setup").hidden = get("settings").hidden = get("next").hidden = false;
-  get("build").hidden = false;
   get("peek").hidden = get("leave").hidden = get("swap").hidden = true;
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES[mode];
@@ -381,7 +368,7 @@ function reveal() {
   swapLeft = 1;
   peeked = false;
   phase = PHASE.REVEAL;
-  get("setup").hidden = get("settings").hidden = get("build").hidden = true;
+  get("setup").hidden = get("settings").hidden = true;
   get("leave").hidden = false;
   get("heading").textContent = "Guessers, look away!";
   get("description").textContent =
