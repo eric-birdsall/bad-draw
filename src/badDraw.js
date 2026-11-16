@@ -126,6 +126,18 @@ const pickWord = createWordPicker({ words: wordsAt(["easy", "medium"]) });
 
 const get = (key) => root.querySelector(`[data-${key}]`);
 const intro = root.querySelector(".bad-draw-intro");
+
+// Version and last-commit date, injected by vite.config.js.
+{
+  const { version, commit, date } = __BUILD__;
+  const day = new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  get("build").textContent = `Version ${version} · Last updated ${day}`;
+  if (commit) get("build").title = `Commit ${commit}`;
+}
 const play = root.querySelector(".bad-draw-play");
 const canvas = play.querySelector("canvas");
 const cursor = play.querySelector(".bad-draw-cursor");
@@ -201,18 +213,14 @@ let mode = "live";
 // Within a round: "draw", then in Reveal mode "pass" and "guess".
 let stage;
 const cover = get("cover");
-const modeButtons = get("mode").querySelectorAll("button");
-modeButtons.forEach((button) =>
-  button.addEventListener("click", () => {
-    mode = button.value;
-    modeButtons.forEach((other) =>
-      other.setAttribute("aria-checked", String(other === button)),
-    );
-    get("description").textContent = RULES[mode];
-  }),
-);
 const settings = document.querySelector(".bad-draw-dev");
 const devControls = settings.querySelector(".bad-draw-dev-controls");
+// Live unless Reveal Mode is switched on in Settings (this visit only).
+const revealToggle = settings.querySelector("[data-reveal-mode]");
+listen(revealToggle, "change", () => {
+  mode = revealToggle.checked ? "reveal" : "live";
+  get("description").textContent = RULES[mode];
+});
 devControls.innerHTML = DEV_SLIDERS.map(
   ({ key, label, min, max, step }) => `
   <div class="bad-draw-dev-row">
@@ -334,7 +342,8 @@ function ready() {
   root.classList.remove("playing");
   intro.hidden = false;
   get("setup").hidden = get("settings").hidden = get("next").hidden = false;
-  get("peek").hidden = get("leave").hidden = get("swap").hidden = true;
+  get("build").hidden = false;
+  get("peek").hidden = get("swap").hidden = true;
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES[mode];
   cover.hidden = true;
@@ -368,8 +377,7 @@ function reveal() {
   swapLeft = 1;
   peeked = false;
   phase = PHASE.REVEAL;
-  get("setup").hidden = get("settings").hidden = true;
-  get("leave").hidden = false;
+  get("setup").hidden = get("settings").hidden = get("build").hidden = true;
   get("heading").textContent = "Guessers, look away!";
   get("description").textContent =
     "Drawer, hold to peek. Let go before you start the clock.";
@@ -628,7 +636,6 @@ listen(get("swap"), "click", () => {
   swapLeft = 0;
   peeked = false;
   word = pickWord();
-  get("swap").hidden = true;
   get("description").textContent =
     "New word! Hold to peek. No going back to the old one.";
   showWord();
@@ -697,7 +704,7 @@ function tick(now) {
 }
 
 get("next").onclick = go;
-get("leave").onclick = get("exit").onclick = get("again").onclick = ready;
+get("exit").onclick = get("again").onclick = ready;
 get("correct").onclick = () => finish(true);
 get("done").onclick = handOff;
 get("show").onclick = showDrawing;
