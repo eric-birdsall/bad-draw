@@ -8,6 +8,7 @@ import { createWordPicker, wordsAt } from "../shared/badDrawWords.js";
 import { createDrawingCanvas, replayDrawing } from "./badDrawCanvas.js";
 import { drawCover } from "./cover.js";
 import { createGallery } from "./gallery.js";
+import { createMusic } from "./music.js";
 import "./badDraw.css";
 
 // Medium is the shared default. Easy is a steady sway with a little room for mistakes;
@@ -309,14 +310,42 @@ const gallery = createGallery(document.querySelector(".gallery"), {
 galleryButtons.forEach((button) => listen(button, "click", gallery.open));
 
 let audio;
+const music = createMusic();
 function unlockAudio() {
   if (!window.AudioContext) return;
   audio ||= new AudioContext();
   audio.resume().catch(() => {});
+  music.connect(audio);
+}
+// Browsers only allow sound after a tap, so the menu music starts on the first one.
+document.addEventListener("click", unlockAudio, true);
+document.addEventListener("keydown", unlockAudio, true);
+
+// Mute silences the music and the sound effects. Remembered on this device.
+const muteToggle = get("mute-toggle");
+let muted = false;
+function setMuted(value, save) {
+  muted = value;
+  music.setMuted(muted);
+  muteToggle.setAttribute("aria-pressed", String(muted));
+  const label = muted ? "Unmute sound" : "Mute sound";
+  muteToggle.setAttribute("aria-label", label);
+  muteToggle.title = label;
+  if (save) {
+    try {
+      localStorage.setItem("drunk-drawing-muted", muted ? "1" : "0");
+    } catch {}
+  }
+}
+listen(muteToggle, "click", () => setMuted(!muted, true));
+try {
+  setMuted(localStorage.getItem("drunk-drawing-muted") === "1", false);
+} catch {
+  setMuted(false, false);
 }
 
 function sound(frequency, duration = 0.12, delay = 0) {
-  if (audio?.state !== "running") return;
+  if (muted || audio?.state !== "running") return;
   const now = audio.currentTime + delay;
   const oscillator = audio.createOscillator();
   const gain = audio.createGain();
@@ -348,7 +377,7 @@ function ready() {
   get("description").textContent = RULES[mode];
   cover.hidden = true;
   get("next").textContent = "Continue";
-  updateGalleryButtons();
+  updateGalleryButtons();  music.play();
 }
 
 function showWord() {
@@ -395,6 +424,7 @@ function go() {
   } else if (phase === PHASE.REVEAL && !get("next").disabled) {
     phase = PHASE.PLAYING;
     stage = "draw";
+    music.stop();
     hideWord();
     const now = performance.now();
     roundDuration = tuning.duration;

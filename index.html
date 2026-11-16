@@ -25,6 +25,24 @@
             <img class="logo" src="/src/main-logo.png" alt="" />
           </button>
         </h1>
+        <div class="masthead-buttons">
+        <button
+          type="button"
+          class="settings-button mute-toggle"
+          data-mute-toggle
+          aria-pressed="false"
+          aria-label="Mute sound"
+          title="Mute sound"
+        >
+          <svg class="icon-sound" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" />
+            <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+          </svg>
+          <svg class="icon-muted" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4Z" />
+            <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+          </svg>
+        </button>
         <button
           type="button"
           class="settings-button theme-toggle"
@@ -40,6 +58,7 @@
             <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
           </svg>
         </button>
+        </div>
       </header>
 
       <section class="bad-draw-intro">

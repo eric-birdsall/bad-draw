@@ -825,10 +825,19 @@ footer p {
 .masthead h1 {
   min-width: 0;
 }
-.masthead .theme-toggle {
+.masthead-buttons {
   flex: none;
+  display: flex;
+  gap: 0.5rem;
   margin-left: auto;
   align-self: flex-start;
+}
+.mute-toggle .icon-muted,
+.mute-toggle[aria-pressed="true"] .icon-sound {
+  display: none;
+}
+.mute-toggle[aria-pressed="true"] .icon-muted {
+  display: block;
 }
 /* The gear sits left of Continue; keep it square on phones too. */
 .round-setup .actions .settings-button {
