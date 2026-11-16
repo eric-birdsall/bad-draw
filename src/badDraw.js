@@ -2,6 +2,7 @@ import {
   BAD_DRAW as C,
   DRAW_PHASE as PHASE,
   createDrift,
+  createInkWidth,
   roundResult,
 } from "../shared/badDraw.js";
 import { createWordPicker, wordsAt } from "../shared/badDrawWords.js";
@@ -111,6 +112,22 @@ const DEV_SLIDERS = [
     unit: " px",
   },
   {
+    key: "inkSwell",
+    label: "Ink swell size",
+    min: 1,
+    max: 4,
+    step: 0.1,
+    unit: "×",
+  },
+  {
+    key: "inkSwells",
+    label: "Ink swells per round",
+    min: 1,
+    max: 8,
+    step: 1,
+    unit: "",
+  },
+  {
     key: "duration",
     label: "Round length",
     min: 10000,
@@ -170,7 +187,7 @@ const resize = new ResizeObserver(() => {
 });
 let phase, word, swapLeft, peeked, deadline, roundDuration, undoLeft, clearLeft, lastSecond;
 let pointerId, revealId, intended;
-let drift, roundStart, lastHiccup;
+let drift, inkWidth, roundStart, lastHiccup;
 const hic = play.querySelector(".bad-draw-hic");
 const meter = play.querySelector(".drunk-meter");
 const DRUNK_WORDS = [
@@ -438,11 +455,9 @@ function go() {
     fitPaper(true);
     intended = center();
     ink.resize();
-    drift = createDrift(
-      Math.floor(Math.random() * 0x100000000),
-      tuning,
-      roundDuration,
-    );
+    const seed = Math.floor(Math.random() * 0x100000000);
+    drift = createDrift(seed, tuning, roundDuration);
+    inkWidth = createInkWidth(seed, tuning, roundDuration);
     roundStart = now;
     lastHiccup = undefined;
     hic.classList.remove("pop");
@@ -611,7 +626,8 @@ listen(canvas, "pointerdown", (event) => {
   moveCursor(x, y);
   pointerId = event.pointerId;
   canvas.setPointerCapture(pointerId);
-  ink.begin(x, y, now, tuning.strokeWidth);
+  // The ink swells and thins a few times over the round.
+  ink.begin(x, y, now, inkWidth);
   updateTools();
 });
 

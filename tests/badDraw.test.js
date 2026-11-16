@@ -4,6 +4,7 @@ import {
   BAD_DRAW,
   createDrift,
   drunkenness,
+  createInkWidth,
   roundResult,
 } from "../shared/badDraw.js";
 import { BAD_DRAW_WORDS, DIFFICULTIES, createWordPicker, wordsAt } from "../shared/badDrawWords.js";
@@ -163,4 +164,25 @@ test("every category tags its words easy, medium, or hard", () => {
   for (const difficulty of DIFFICULTIES) {
     assert.ok(wordsAt([difficulty]).length > 0);
   }
+});
+
+test("ink swells and thins a few times a round, smoothly and by seed", () => {
+  const config = { ...BAD_DRAW, strokeWidth: 5, inkSwell: 2.2, inkSwells: 3 };
+  const { duration, sampleMs } = config;
+  const width = createInkWidth(7, config);
+  const widths = Array.from({ length: Math.ceil(duration / sampleMs) + 1 }, (_, i) =>
+    width(i * sampleMs),
+  );
+  const thick = 5 * 2.2,
+    thin = 5 / Math.sqrt(2.2);
+  assert.ok(widths.every((w) => w >= thin - 1e-9 && w <= thick + 1e-9));
+  assert.ok(widths.slice(1).every((w, i) => Math.abs(w - widths[i]) < 0.2));
+  // Count swells: crossings up through the middle width.
+  const mid = (thick + thin) / 2;
+  const swells = widths.slice(1).filter((w, i) => widths[i] < mid && w >= mid).length;
+  assert.equal(swells, 3);
+  assert.equal(width(4000), createInkWidth(7, config)(4000));
+  assert.notEqual(width(4000), createInkWidth(8, config)(4000));
+  const steady = createInkWidth(7, { ...config, inkSwell: 1 });
+  assert.ok(widths.every((_, i) => steady(i * sampleMs) === 5));
 });

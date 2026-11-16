@@ -5,7 +5,9 @@ import { paperColors } from "./paperColors.js";
  * any display size without re-sampling drift or changing the geometry.
  * `size` is the paper in game units; each round picks its own shape. */
 const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+// Points carry their own width `w` so the ink can swell mid-stroke.
 function dot(ctx, p) {
+  if (p.w) ctx.lineWidth = p.w;
   ctx.beginPath();
   ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2);
   ctx.fill();
@@ -17,6 +19,7 @@ function segment(ctx, points, end) {
     c = points[end];
   const from = a ? midpoint(a, b) : b,
     to = midpoint(b, c);
+  if (b.w) ctx.lineWidth = b.w;
   ctx.beginPath();
   ctx.moveTo(from.x, from.y);
   ctx.quadraticCurveTo(b.x, b.y, to.x, to.y);
@@ -27,6 +30,7 @@ function tail(ctx, points) {
   if (points.length < 2) return;
   const last = points.at(-1),
     from = midpoint(points.at(-2), last);
+  if (last.w) ctx.lineWidth = last.w;
   ctx.beginPath();
   ctx.moveTo(from.x, from.y);
   ctx.lineTo(last.x, last.y);
@@ -121,7 +125,7 @@ export function createDrawingCanvas(canvas) {
   const strokes = [];
   // Everything the drawer did, timed from the round start, for the replay.
   const log = [];
-  let stroke, previous, drift, startTime;
+  let stroke, previous, drift, startTime, widthAt;
   let strokeWidth = C.strokeWidth;
   let size = { width: C.width, height: C.height };
 
@@ -164,10 +168,12 @@ export function createDrawingCanvas(canvas) {
   }
 
   function point(x, y, at) {
-    const offset = drift(Math.max(0, at - startTime));
+    const t = Math.max(0, at - startTime);
+    const offset = drift(t);
     const p = { x: x + offset.x, y: y + offset.y };
+    if (widthAt) p.w = widthAt(t);
     stroke.push(p);
-    log.push({ type: "point", t: Math.max(0, at - startTime), ...p });
+    log.push({ type: "point", t, ...p });
     if (stroke.length === 1) dot(ctx, stroke[0]);
     else segment(ctx, stroke, stroke.length - 1);
   }
@@ -231,8 +237,12 @@ export function createDrawingCanvas(canvas) {
       startTime = now;
       redraw();
     },
+    /** `width` is a number, or a function of ms into the round for ink that
+     * changes width as it goes. */
     begin(x, y, at, width = C.strokeWidth) {
       end();
+      widthAt = typeof width === "function" ? width : undefined;
+      if (widthAt) width = widthAt(Math.max(0, at - startTime));
       stroke = [];
       ctx.lineWidth = strokeWidth = width;
       strokes.push({ points: stroke, width });

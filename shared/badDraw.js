@@ -15,6 +15,10 @@ export const BAD_DRAW = Object.freeze({
   hiccupSize: 52,
   hiccupMs: 320,
   strokeWidth: 5,
+  // Ink width swells to this multiple at its thickest and thins to one over
+  // its square root between (1 keeps it steady), this many times a round.
+  inkSwell: 2.2,
+  inkSwells: 3,
   undo: 1,
   clear: 1,
   sampleMs: 1000 / 120,
@@ -37,6 +41,36 @@ export function hiccupCount(duration, every) {
 /** How drunk the drawer is `ms` into a round: 1 at the start, `ramp` at the end. */
 export function drunkenness(ms, duration, ramp) {
   return 1 + (ramp - 1) * Math.min(1, Math.max(0, ms / duration));
+}
+
+/** Ink width over a round: it swells and thins `inkSwells` times at seeded,
+ * slightly uneven moments and sizes. Thickest is `strokeWidth * inkSwell`,
+ * thinnest `strokeWidth / sqrt(inkSwell)`. Returns a function of ms. */
+export function createInkWidth(seed, config = BAD_DRAW, duration = config.duration) {
+  let state = (seed ^ 0x5bd1e995) >>> 0;
+  const random = () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let n = Math.imul(state ^ (state >>> 15), state | 1);
+    n ^= n + Math.imul(n ^ (n >>> 7), n | 61);
+    return ((n ^ (n >>> 14)) >>> 0) / 0x100000000;
+  };
+  // Alternate thin and thick knots; each moves up to 30% of a step either way.
+  const count = 2 * Math.max(1, Math.round(config.inkSwells));
+  const step = duration / count;
+  const knots = Array.from({ length: count + 2 }, (_, i) => ({
+    t: i * step + (i ? (random() - 0.5) * 0.6 * step : 0),
+    v: i % 2 ? 0.65 + 0.35 * random() : 0.25 * random(),
+  }));
+  return (ms) => {
+    const t = Math.min(duration, Math.max(0, ms));
+    let i = 0;
+    while (knots[i + 1].t < t) i++;
+    const a = knots[i],
+      b = knots[i + 1];
+    const u = (t - a.t) / (b.t - a.t);
+    const v = a.v + (b.v - a.v) * u * u * (3 - 2 * u);
+    return config.strokeWidth * config.inkSwell ** (1.5 * v - 0.5);
+  };
 }
 
 /** Seeded smooth value noise, sampled at continuous time, with independent
