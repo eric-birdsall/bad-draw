@@ -10,35 +10,37 @@ import { drawCover } from "./cover.js";
 import { createGallery } from "./gallery.js";
 import "./badDraw.css";
 
-// Medium is the shared default. Easy is a gentle sway with room for mistakes;
+// Medium is the shared default. Easy is a steady sway with a little room for mistakes;
 // Hard wanders far and fast, hiccups often, and gives less time and fewer fixes.
 const PRESETS = {
   easy: {
-    amplitude: 9,
-    frequency: 1.05,
-    lean: 0.25,
-    ramp: 1.2,
-    hiccups: 2,
-    hiccupSize: 18,
-    duration: 75_000,
-    undo: 4,
-    clear: 2,
-    note: "Gentle sway, 2 hiccups, 75 seconds, 4 undos",
+    amplitude: 20,
+    frequency: 1.7,
+    lean: 0.35,
+    ramp: 1.5,
+    hiccups: 4,
+    hiccupSize: 36,
+    duration: 45_000,
+    undo: 2,
+    clear: 1,
+    urgentSeconds: 10,
+    note: "Steady sway, 4 hiccups, 45 seconds, 2 undos",
   },
   medium: {
-    note: "Steady wobble, 4 hiccups, 45 seconds, 2 undos",
+    note: "Big lurches, 5 hiccups, 30 seconds, 1 undo",
   },
   hard: {
-    amplitude: 30,
-    frequency: 2.3,
+    amplitude: 42,
+    frequency: 2.8,
     lean: 0.5,
-    ramp: 1.75,
-    hiccups: 7,
-    hiccupSize: 52,
-    duration: 30_000,
-    undo: 1,
+    ramp: 2,
+    hiccups: 5,
+    hiccupSize: 70,
+    duration: 15_000,
+    undo: 0,
     clear: 1,
-    note: "Big lurches, 7 hiccups, 30 seconds, 1 undo",
+    urgentSeconds: 5,
+    note: "Blackout wobble, 5 hiccups, 15 seconds, no undos",
   },
 };
 const RULES =
@@ -150,7 +152,7 @@ const resize = new ResizeObserver(() => {
   if (phase === PHASE.PLAYING) fitPaper(false);
   ink.resize();
 });
-let phase, word, deadline, roundDuration, undoLeft, clearLeft, lastSecond;
+let phase, word, swapLeft, peeked, deadline, roundDuration, undoLeft, clearLeft, lastSecond;
 let pointerId, revealId, intended;
 let drift, roundStart, lastHiccup;
 const hic = play.querySelector(".bad-draw-hic");
@@ -212,6 +214,30 @@ difficultyButtons.forEach((button) =>
   }),
 );
 listen(settings.querySelector("[data-dev-reset]"), "click", resetTuning);
+
+// Theme: dark unless the group picked light. Remembered on this device.
+const themeToggle = get("theme-toggle");
+function setTheme(theme, save) {
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name="theme-color"]').content =
+    theme === "light" ? "#e8e5d9" : "#161b1a";
+  const label = theme === "light" ? "Switch to dark mode" : "Switch to light mode";
+  themeToggle.setAttribute("aria-label", label);
+  themeToggle.title = label;
+  if (save) {
+    try {
+      localStorage.setItem("drunk-drawing-theme", theme);
+    } catch {}
+    // The paper follows the theme, so repaint what's already drawn on it.
+    drawCover(get("preview"));
+    ink.restyle();
+    gallery.restyle();
+  }
+}
+listen(themeToggle, "click", () =>
+  setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light", true),
+);
+setTheme(document.documentElement.dataset.theme || "dark", false);
 // Tuning happens on the main menu only, never mid-round.
 listen(get("settings"), "click", () => settings.showModal());
 listen(settings, "click", (event) => {
@@ -262,8 +288,8 @@ function ready() {
   resultCard.hidden = play.hidden = true;
   root.classList.remove("playing");
   intro.hidden = false;
-  get("setup").hidden = get("next").hidden = false;
-  get("peek").hidden = get("leave").hidden = true;
+  get("setup").hidden = get("settings").hidden = get("next").hidden = false;
+  get("peek").hidden = get("leave").hidden = get("swap").hidden = true;
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES;
   get("next").textContent = "Continue";
@@ -278,6 +304,9 @@ function showWord() {
     secret.hidden = !visible;
   }
   get("next").disabled = visible;
+  if (visible) peeked = true;
+  // One swap per round, only after the drawer has seen the word.
+  get("swap").disabled = visible || !peeked || !swapLeft;
 }
 
 function hideWord() {
@@ -290,13 +319,17 @@ function hideWord() {
 
 function reveal() {
   word = pickWord();
+  swapLeft = 1;
+  peeked = false;
   phase = PHASE.REVEAL;
-  get("setup").hidden = true;
+  get("setup").hidden = get("settings").hidden = true;
   get("leave").hidden = false;
   get("heading").textContent = "Guessers, look away!";
   get("description").textContent =
     "Drawer, hold to peek. Let go before you start the clock.";
   get("peek").hidden = false;
+  get("swap").hidden = false;
+  get("swap").disabled = true;
   get("next").textContent = "Start drawing";
   updateGalleryButtons();
 }
@@ -366,9 +399,9 @@ function updateClock(now) {
     `${Math.floor(second / 60)}:${String(second % 60).padStart(2, "0")}`;
   get("time").parentElement.classList.toggle(
     "urgent",
-    second <= C.urgentSeconds,
+    second <= tuning.urgentSeconds,
   );
-  if (second > 0 && second <= C.urgentSeconds) sound(310, 0.07);
+  if (second > 0 && second <= tuning.urgentSeconds) sound(310, 0.07);
 }
 
 function updateTools() {
@@ -483,6 +516,17 @@ for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
     showWord();
   });
 }
+// The drawer may trade the word once; the first word is gone for good.
+listen(get("swap"), "click", () => {
+  if (phase !== PHASE.REVEAL || !swapLeft || revealId !== undefined) return;
+  swapLeft = 0;
+  peeked = false;
+  word = pickWord();
+  get("swap").hidden = true;
+  get("description").textContent =
+    "New word! Hold to peek. No going back to the old one.";
+  showWord();
+});
 // A long press on the peek button must not open a callout or select text.
 listen(get("peek"), "contextmenu", (event) => event.preventDefault());
 

@@ -1,5 +1,8 @@
+import { paperColors } from "./paperColors.js";
+
 export function drawCover(canvas) {
   const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.lineCap = ctx.lineJoin = "round";
   ctx.lineWidth = 5;
 
@@ -11,8 +14,7 @@ export function drawCover(canvas) {
     ctx.stroke();
   }
 
-  const ink = "#263a35";
-  const pencil = "#a74436";
+  const { ink, pencil } = paperColors();
 
   // A crooked kite and its tail, drawn as a sample of marks on the pad.
   line(ink, [

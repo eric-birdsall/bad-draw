@@ -1,4 +1,5 @@
 import { BAD_DRAW as C } from "../shared/badDraw.js";
+import { paperColors } from "./paperColors.js";
 
 /** Paint and retain actual ink points. The backing store can be rebuilt at
  * any display size without re-sampling drift or changing the geometry.
@@ -78,7 +79,7 @@ export function createDrawingCanvas(canvas) {
     );
     ctx.lineWidth = strokeWidth;
     ctx.lineCap = ctx.lineJoin = "round";
-    ctx.strokeStyle = ctx.fillStyle = C.ink;
+    ctx.strokeStyle = ctx.fillStyle = paperColors().ink;
   }
 
   function point(x, y, at) {
@@ -118,6 +119,11 @@ export function createDrawingCanvas(canvas) {
   style();
   return {
     resize,
+    /** Repaint in the current theme's ink color. */
+    restyle() {
+      style();
+      redraw();
+    },
     advance,
     end,
     get hasInk() {

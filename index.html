@@ -1,9 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#e8e5d9" />
+    <meta name="theme-color" content="#161b1a" />
+    <script>
+      // Dark by default; the home-screen toggle can switch to light. Set before first paint.
+      try {
+        if (localStorage.getItem("drunk-drawing-theme") === "light") {
+          document.documentElement.dataset.theme = "light";
+          document.querySelector('meta[name="theme-color"]').content = "#e8e5d9";
+        }
+      } catch {}
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Drunk Drawing</title>
@@ -12,7 +21,21 @@
     <main class="bad-draw">
       <header class="masthead">
         <h1><img class="logo" src="/src/main-logo.png" alt="Drunk Drawing" /></h1>
-        <p>Drawing, under the influence</p>
+        <button
+          type="button"
+          class="settings-button theme-toggle"
+          data-theme-toggle
+          aria-label="Switch to light mode"
+          title="Switch to light mode"
+        >
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+          </svg>
+        </button>
       </header>
 
       <section class="bad-draw-intro">
@@ -22,6 +45,7 @@
         <div class="round-setup">
           <h2 data-heading></h2>
           <p data-description></p>
+          <div class="setup-controls">
           <div class="difficulty" data-setup>
             <div
               class="difficulty-buttons"
@@ -33,6 +57,14 @@
               <button type="button" role="radio" aria-checked="true" value="medium">Medium</button>
               <button type="button" role="radio" aria-checked="false" value="hard">Hard</button>
             </div>
+            <small data-difficulty-note></small>
+          </div>
+          <div class="actions">
+            <strong class="secret-word" data-word hidden></strong>
+            <button type="button" data-peek hidden>
+              Hold to reveal
+            </button>
+            <button type="button" data-swap hidden>Swap word</button>
             <button
               type="button"
               class="settings-button"
@@ -47,13 +79,6 @@
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </button>
-            <small data-difficulty-note></small>
-          </div>
-          <div class="actions">
-            <strong class="secret-word" data-word hidden></strong>
-            <button type="button" data-peek hidden>
-              Hold to reveal
-            </button>
             <button type="button" class="primary" data-next>
               Continue
             </button>
@@ -61,6 +86,7 @@
             <button type="button" data-gallery-open hidden>
               Gallery · <span></span>
             </button>
+          </div>
           </div>
         </div>
       </section>

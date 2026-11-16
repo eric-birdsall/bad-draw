@@ -1,26 +1,25 @@
 export const BAD_DRAW = Object.freeze({
-  duration: 45_000,
+  duration: 30_000,
   width: 960,
   height: 600,
-  amplitude: 18,
-  frequency: 1.6,
+  amplitude: 30,
+  frequency: 2.3,
   // Share of the wander that comes from a slow lean (about a quarter the speed).
-  lean: 0.35,
+  lean: 0.45,
   // Distance and speed multiplier reached by the end of the round.
-  ramp: 1.45,
+  ramp: 1.75,
   // Hiccups per round (0 turns them off), their reach and length. The round is
   // split into this many equal stretches, with one hiccup at a random moment
   // in each.
-  hiccups: 4,
-  hiccupSize: 34,
+  hiccups: 5,
+  hiccupSize: 52,
   hiccupMs: 320,
   strokeWidth: 5,
-  ink: "#233c36",
-  undo: 2,
+  undo: 1,
   clear: 1,
   sampleMs: 1000 / 120,
   sampleDistance: 5,
-  urgentSeconds: 10,
+  urgentSeconds: 8,
 });
 
 export const DRAW_PHASE = Object.freeze({

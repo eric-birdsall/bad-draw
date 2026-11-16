@@ -1,3 +1,5 @@
+import { paperColors } from "./paperColors.js";
+
 // Every finished round's drawing, kept for the night. Entries survive a reload
 // in sessionStorage when they fit, and live in memory either way.
 const STORE = "drunk-drawing-gallery";
@@ -21,10 +23,10 @@ const tryStorage = (fn) => {
   }
 };
 
-function paper(ctx, x, y, width, height) {
-  ctx.fillStyle = "#fdfaf0";
+function paper(ctx, x, y, width, height, colors) {
+  ctx.fillStyle = colors.paper;
   ctx.fillRect(x, y, width, height);
-  ctx.fillStyle = "rgb(106 124 103 / 0.25)";
+  ctx.fillStyle = colors.dot;
   for (let dy = 8; dy < height; dy += 17)
     for (let dx = 8; dx < width; dx += 17) {
       ctx.beginPath();
@@ -38,24 +40,40 @@ function fitText(ctx, text, maxWidth, size, family) {
   while (ctx.measureText(text).width > maxWidth && (size -= 2) > 16);
 }
 
-/** The drawing on paper with the word and the result underneath. */
+/** The drawing recolored to `ink`, whatever theme it was drawn in. */
+function tint(image, ink) {
+  const canvas = Object.assign(document.createElement("canvas"), {
+    width: image.width,
+    height: image.height,
+  });
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = ink;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/** The drawing on paper with the word and the result underneath, in the
+ * current theme's colors. */
 function drawCard(ctx, image, { word, success, score }) {
+  const colors = paperColors();
   const card = cardSize(image);
-  paper(ctx, 0, 0, card.width, card.height);
-  ctx.drawImage(image, (card.width - image.width) / 2, 0);
-  ctx.fillStyle = "#a7aea0";
+  paper(ctx, 0, 0, card.width, card.height, colors);
+  ctx.drawImage(tint(image, colors.ink), (card.width - image.width) / 2, 0);
+  ctx.fillStyle = colors.rule;
   ctx.fillRect(0, image.height, card.width, 2);
   ctx.textBaseline = "middle";
   const mid = image.height + CAPTION / 2 + 2;
   const result = success ? `${score} pts` : "Time’s up";
   ctx.font = "bold 46px Georgia, serif";
   const resultWidth = ctx.measureText(result).width;
-  ctx.fillStyle = "#263a35";
+  ctx.fillStyle = colors.ink;
   fitText(ctx, word, card.width - resultWidth - 110, 58, "Georgia, serif");
   ctx.textAlign = "left";
   ctx.fillText(word, 36, mid);
   ctx.font = "bold 46px Georgia, serif";
-  ctx.fillStyle = success ? "#263a35" : "#a74436";
+  ctx.fillStyle = success ? colors.ink : colors.pencil;
   ctx.textAlign = "right";
   ctx.fillText(result, card.width - 36, mid);
 }
@@ -164,15 +182,16 @@ export function createGallery(dialog, { onChange = () => {} } = {}) {
       height: header + rows * (tile.height + gap) + gap,
     });
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#e8e5d9";
+    const colors = paperColors();
+    ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#263a35";
+    ctx.fillStyle = colors.title;
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     fitText(ctx, "Drunk Drawing", canvas.width - 2 * gap, 54, "Georgia, serif");
     ctx.fillText("Drunk Drawing", canvas.width / 2, header / 2 - 8);
     ctx.font = "22px system-ui, sans-serif";
-    ctx.fillStyle = "#52635c";
+    ctx.fillStyle = colors.muted;
     ctx.fillText(summary(), canvas.width / 2, header - 22);
     const images = await Promise.all(ready.map((e) => loadImage(e.url)));
     images.forEach((image, i) => {
@@ -187,7 +206,7 @@ export function createGallery(dialog, { onChange = () => {} } = {}) {
         h = image.height * scale;
       const left = x + (tile.width - w) / 2,
         top = y + (tile.height - h) / 2;
-      ctx.fillStyle = "#d3cfc0";
+      ctx.fillStyle = colors.shadow;
       ctx.fillRect(left + 3, top + 4, w, h);
       ctx.drawImage(image, left, top, w, h);
     });
@@ -298,6 +317,21 @@ export function createGallery(dialog, { onChange = () => {} } = {}) {
     resetClear();
   });
 
+  /** Rebuild every card from its drawing, in the current theme. */
+  async function rebuild() {
+    await Promise.all(
+      entries.map((entry) =>
+        loadImage(entry.drawing)
+          .then((image) => {
+            if (entry.url) URL.revokeObjectURL(entry.url);
+            return makeCard(entry, image);
+          })
+          .catch(() => {}),
+      ),
+    );
+    if (dialog.open) render();
+  }
+
   // Rebuild the cards for drawings kept from before a reload.
   Promise.all(
     entries.map((entry) =>
@@ -316,6 +350,7 @@ export function createGallery(dialog, { onChange = () => {} } = {}) {
     get size() {
       return entries.length;
     },
+    restyle: rebuild,
     /** Keep the drawing on `canvas` with how the round went. */
     async add(canvas, { word, success, score }) {
       const scale = LONGEST / Math.max(canvas.width, canvas.height);

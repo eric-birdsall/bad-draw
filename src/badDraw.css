@@ -1,15 +1,63 @@
+/* Two themes. Dark is the default (set on <html> in index.html); light is
+   picked with the home-screen toggle. The drawing paper follows the theme: cream with dark ink
+   in light, dark with light ink in dark. Canvas code reads these variables
+   through src/paperColors.js. */
 :root {
-  color: #263a35;
-  background: #e8e5d9;
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--bg);
   font:
     16px/1.5 Inter,
     system-ui,
     sans-serif;
+  /* Room and UI */
+  --bg: #e8e5d9;
   --ink: #263a35;
   --muted: #52635c;
   --pencil: #a74436;
-  --paper: #fdfaf0;
   --line: #a7aea0;
+  --surface: #f3efe3;
+  --surface-shadow: #d3cfc0;
+  --button: #fdfaf0;
+  --button-active: #e0e7d7;
+  --primary: #263a35;
+  --primary-text: #fdfaf0;
+  --primary-active: #3b574d;
+  --glass: #fffdf4;
+  --backdrop: rgb(38 58 53 / 0.5);
+  --logo-filter: none;
+  /* The paper itself, and what sits on it */
+  --paper: #fdfaf0;
+  --paper-dot: rgb(106 124 103 / 0.25);
+  --paper-ink: #263a35;
+  --paper-pencil: #a74436;
+  --paper-edge: #a8aa9b;
+  --paper-shadow: #ddd7c4;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161b1a;
+  --ink: #e7e3d4;
+  --muted: #9aa69f;
+  --pencil: #ec8a76;
+  --line: #3a4441;
+  --surface: #1f2725;
+  --surface-shadow: #0b0f0e;
+  --button: #26302d;
+  --button-active: #34423e;
+  --primary: #e7e3d4;
+  --primary-text: #161b1a;
+  --primary-active: #c8c3b1;
+  --glass: #2b3532;
+  --backdrop: rgb(0 0 0 / 0.65);
+  /* The logo is black ink; flip it to light and keep its red mark red. */
+  --logo-filter: invert(1) hue-rotate(180deg) brightness(0.92);
+  --paper: #222a28;
+  --paper-dot: rgb(231 227 212 / 0.13);
+  --paper-ink: #ece8da;
+  --paper-pencil: #ec8a76;
+  --paper-edge: #3a4441;
+  --paper-shadow: #0b0f0e;
 }
 
 * {
@@ -24,7 +72,7 @@ body {
   margin: 0;
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
-  background: #e8e5d9;
+  background: var(--bg);
 }
 [hidden] {
   display: none !important;
@@ -39,7 +87,6 @@ body {
 .masthead {
   display: flex;
   align-items: flex-end;
-  flex-wrap: wrap;
   gap: 0.25rem 1.3rem;
   border-bottom: 1px solid var(--line);
   margin-bottom: 1.5rem;
@@ -66,12 +113,12 @@ h1 {
 
 .logo {
   display: block;
-  height: clamp(4.5rem, 14vw, 7.5rem);
+  height: clamp(6rem, 18vw, 9.5rem);
   width: auto;
   max-width: 100%;
+  filter: var(--logo-filter);
 }
 
-.masthead p,
 small {
   color: var(--muted);
 }
@@ -81,20 +128,20 @@ small {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   align-items: center;
   gap: clamp(1rem, 5vw, 4rem);
-  background: #f3efe3;
+  background: var(--surface);
   border: 1px solid var(--line);
   padding: clamp(1rem, 4vw, 3.5rem);
-  box-shadow: 3px 4px 0 #d3cfc0;
+  box-shadow: 3px 4px 0 var(--surface-shadow);
 }
 
 .sketch-preview,
 .bad-draw-sheet,
 .bad-draw-snapshot {
   background-color: var(--paper);
-  background-image: radial-gradient(#6a7c6740 1px, transparent 1px);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
   background-size: 17px 17px;
-  border: 1px solid #a8aa9b;
-  box-shadow: 2px 3px 0 #ddd7c4;
+  border: 1px solid var(--paper-edge);
+  box-shadow: 2px 3px 0 var(--paper-shadow);
 }
 
 .sketch-preview {
@@ -112,29 +159,36 @@ small {
   font-size: clamp(1.9rem, 4vw, 3.25rem);
   line-height: 1.1;
 }
+/* Everything in the setup column is centered. */
+.round-setup {
+  text-align: center;
+}
 .round-setup > p {
-  margin-block: 0.8rem 1.3rem;
+  margin: 0.8rem auto 1.3rem;
   max-width: 36ch;
+}
+.setup-controls {
+  margin-inline: auto;
 }
 
 .difficulty {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  gap: 0.35rem 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0;
   align-items: center;
   margin-bottom: 1.3rem;
 }
 
 .difficulty small {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
 }
 .difficulty-buttons {
   display: flex;
   gap: 0.4rem;
 }
 .difficulty-buttons button[aria-checked="true"] {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--primary);
+  color: var(--primary-text);
 }
 .settings-button {
   width: 3rem;
@@ -154,7 +208,7 @@ button {
   border: 1px solid var(--ink);
   border-radius: 0.2rem;
   padding: 0.55rem 0.8rem;
-  background: var(--paper);
+  background: var(--button);
   color: var(--ink);
   font: inherit;
   font-weight: 650;
@@ -172,15 +226,16 @@ button {
   -webkit-touch-callout: none;
 }
 button:not(:disabled):active {
-  background: #e0e7d7;
+  background: var(--button-active);
   transform: translateY(1px);
 }
 button.primary {
-  background: var(--ink);
-  color: var(--paper);
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-text);
 }
 button.primary:not(:disabled):active {
-  background: #3b574d;
+  background: var(--primary-active);
 }
 button:disabled {
   opacity: 0.5;
@@ -209,8 +264,14 @@ footer {
   flex-wrap: wrap;
 }
 
+/* Shrink-wrapped and centered, so the word bubble (left: 0) still sits
+   over the peek button. */
 .round-setup .actions {
   position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  justify-content: center;
 }
 /* Floats above the peek button so the drawer's thumb doesn't cover it. */
 .secret-word {
@@ -220,9 +281,10 @@ footer {
   z-index: 2;
   max-width: 100%;
   padding: 0.6rem 1.1rem;
-  border: 2px solid var(--ink);
+  border: 2px solid #263a35;
   background: #f8e8ab;
-  box-shadow: 4px 4px 0 rgba(38, 58, 53, 0.25);
+  color: #263a35;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.25);
   font:
     bold 2.2rem Georgia,
     serif;
@@ -235,7 +297,7 @@ footer {
   top: 100%;
   left: 2.5rem;
   border: 0.6rem solid transparent;
-  border-top-color: var(--ink);
+  border-top-color: #263a35;
 }
 .secret-word[hidden] {
   display: none;
@@ -304,7 +366,7 @@ footer {
   position: absolute;
   width: 16px;
   height: 16px;
-  border: 2px solid var(--pencil);
+  border: 2px solid var(--paper-pencil);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -331,7 +393,7 @@ footer {
   border: 3px solid var(--ink);
   border-left-width: 9px;
   border-radius: 9px 6px 6px 9px;
-  background: #fffdf4;
+  background: var(--glass);
 }
 /* Glass shine */
 .mug::before {
@@ -345,6 +407,9 @@ footer {
   border-radius: 2px;
   background: #fff;
   opacity: 0.55;
+}
+[data-theme="dark"] .mug::before {
+  opacity: 0.12;
 }
 .mug-inside {
   position: absolute;
@@ -408,9 +473,9 @@ footer {
   color: var(--ink);
   /* A pale halo keeps it readable over beer and empty glass alike. */
   text-shadow:
-    0 0 2px #fffdf4,
-    0 0 4px #fffdf4,
-    0 0 6px #fffdf4;
+    0 0 2px var(--glass),
+    0 0 4px var(--glass),
+    0 0 6px var(--glass);
 }
 .drunk-meter.jolt .mug {
   animation: mug-wobble 0.6s ease-out;
@@ -434,7 +499,7 @@ footer {
 .bad-draw-hic {
   position: absolute;
   font: italic bold clamp(1.1rem, 2.6vw, 1.7rem) Georgia, serif;
-  color: var(--pencil);
+  color: var(--paper-pencil);
   pointer-events: none;
   white-space: nowrap;
   opacity: 0;
@@ -502,14 +567,14 @@ footer p {
 .bad-draw-dev {
   width: min(26rem, 100% - 2rem);
   max-height: calc(100% - 2rem);
-  background: #f3efe3;
+  background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 0.3rem;
   padding: 1rem 1.2rem;
 }
 .bad-draw-dev::backdrop {
-  background: rgb(38 58 53 / 0.45);
+  background: var(--backdrop);
 }
 .bad-draw-dev .actions {
   display: flex;
@@ -629,14 +694,14 @@ footer p {
 .gallery {
   width: min(60rem, 100% - 2rem);
   max-height: calc(100% - 2rem);
-  background: #f3efe3;
+  background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 0.3rem;
   padding: 1rem 1.2rem 1.2rem;
 }
 .gallery::backdrop {
-  background: rgb(38 58 53 / 0.55);
+  background: var(--backdrop);
 }
 .gallery h2 {
   font-size: clamp(1.4rem, 3vw, 2rem);
@@ -658,10 +723,10 @@ footer p {
   display: block;
   padding: 0;
   min-height: 0;
-  border: 1px solid #a8aa9b;
+  border: 1px solid var(--paper-edge);
   border-radius: 0;
   background: var(--paper);
-  box-shadow: 2px 3px 0 #d3cfc0;
+  box-shadow: 2px 3px 0 var(--paper-shadow);
   rotate: var(--tilt);
   overflow: hidden;
 }
@@ -688,8 +753,8 @@ footer p {
   max-height: calc(100dvh - 10rem);
   object-fit: contain;
   margin-bottom: 1rem;
-  border: 1px solid #a8aa9b;
-  box-shadow: 2px 3px 0 #ddd7c4;
+  border: 1px solid var(--paper-edge);
+  box-shadow: 2px 3px 0 var(--paper-shadow);
 }
 [data-gallery-clear].armed {
   border-color: var(--pencil);
@@ -699,4 +764,40 @@ footer p {
   .gallery .actions button {
     flex: 1 1 auto;
   }
+}
+
+/* Theme toggle in the masthead's top-right corner: shows the sun in dark
+   mode (tap for light) and the moon in light mode (tap for dark). */
+.masthead h1 {
+  min-width: 0;
+}
+.masthead .theme-toggle {
+  flex: none;
+  margin-left: auto;
+  align-self: flex-start;
+}
+/* The gear sits left of Continue; keep it square on phones too. */
+.round-setup .actions .settings-button {
+  flex: 0 0 3rem;
+}
+/* On the main menu the controls are only as wide as Easy/Medium/Hard: the
+   note and the Continue row don't widen it (width 0, min 100%), and
+   Continue stretches so its end lines up with Hard. */
+.setup-controls:has(> .difficulty:not([hidden])) {
+  width: fit-content;
+  max-width: 100%;
+}
+.setup-controls:has(> .difficulty:not([hidden])) :is(.difficulty small, .actions) {
+  width: 0;
+  min-width: 100%;
+}
+.setup-controls:has(> .difficulty:not([hidden])) [data-next] {
+  flex: 1 1 auto;
+}
+.theme-toggle .icon-moon,
+[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+[data-theme="light"] .theme-toggle .icon-moon {
+  display: block;
 }
