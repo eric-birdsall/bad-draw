@@ -376,6 +376,16 @@ function sound(frequency, duration = 0.12, delay = 0) {
   oscillator.stop(now + duration);
 }
 
+// The masthead hides while drawing, so its Back, Mute and theme buttons move
+// into the round's top bar for the round.
+const masthead = root.querySelector(".masthead");
+const mastheadButtons = root.querySelector(".masthead-buttons");
+const roundBar = play.querySelector(".round-bar");
+function setPlaying(on) {
+  root.classList.toggle("playing", on);
+  (on ? roundBar : masthead).append(mastheadButtons);
+}
+
 function ready() {
   phase = PHASE.READY;
   endReplay();
@@ -385,7 +395,7 @@ function ready() {
   hideWord();
   snapshot.removeAttribute("src");
   resultCard.hidden = play.hidden = true;
-  root.classList.remove("playing");
+  setPlaying(false);
   intro.hidden = false;
   get("setup").hidden = get("settings").hidden = get("next").hidden = false;
   get("build").hidden = false;
@@ -394,6 +404,8 @@ function ready() {
   get("description").textContent = RULES[mode];
   cover.hidden = true;
   get("next").textContent = "Continue";
+  // The main menu is the first screen, so there is nothing to go back to.
+  get("back").hidden = true;
   updateGalleryButtons();  music.play();
 }
 
@@ -418,10 +430,14 @@ function hideWord() {
   showWord();
 }
 
-function reveal() {
-  word = pickWord();
-  swapLeft = 1;
-  peeked = false;
+/** The word-peek screen. A new round draws a fresh word; coming Back from
+ * the paper keeps the word and any swap already used. */
+function reveal(newWord = true) {
+  if (newWord) {
+    word = pickWord();
+    swapLeft = 1;
+    peeked = false;
+  }
   phase = PHASE.REVEAL;
   get("setup").hidden = get("settings").hidden = get("build").hidden = true;
   get("heading").textContent = "Guessers, look away!";
@@ -431,6 +447,7 @@ function reveal() {
   get("swap").hidden = false;
   get("swap").disabled = true;
   get("next").textContent = "Start drawing";
+  get("back").hidden = false;
   updateGalleryButtons();
 }
 
@@ -451,7 +468,7 @@ function go() {
     clearLeft = tuning.clear;
     intro.hidden = true;
     play.hidden = false;
-    root.classList.add("playing");
+    setPlaying(true);
     fitPaper(true);
     intended = center();
     ink.resize();
@@ -534,7 +551,7 @@ function finish(correct, now = performance.now()) {
   phase = PHASE.RESULTS;
   stopDrawing();
   play.hidden = true;
-  root.classList.remove("playing");
+  setPlaying(false);
   snapshot.src = canvas.toDataURL();
   endReplay();
   lastRound = { log: ink.log, paper: { ...paper } };
@@ -750,13 +767,27 @@ function tick(now) {
 }
 
 get("next").onclick = go;
-get("exit").onclick = get("again").onclick = ready;
+get("again").onclick = ready;
 get("correct").onclick = () => finish(true);
 get("done").onclick = handOff;
 get("show").onclick = showDrawing;
 get("replay").onclick = replay;
 // The logo always goes home, from any screen, dropping a round in progress.
 get("home").onclick = ready;
+// Back goes one screen: drawing returns to the word peek (same word, round
+// dropped); the word peek and the results card return to the main menu, since
+// a finished round can't be resumed.
+get("back").onclick = () => {
+  if (phase !== PHASE.PLAYING) return ready();
+  stopDrawing();
+  cursor.hidden = cover.hidden = true;
+  hic.classList.remove("pop");
+  play.hidden = true;
+  setPlaying(false);
+  intro.hidden = false;
+  reveal(false);
+  music.play();
+};
 get("undo").onclick = () => tool("undo");
 get("clear").onclick = () => tool("clear");
 resize.observe(space);

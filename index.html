@@ -28,6 +28,18 @@
         <div class="masthead-buttons">
         <button
           type="button"
+          class="settings-button"
+          data-back
+          aria-label="Back"
+          title="Back"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <button
+          type="button"
           class="settings-button mute-toggle"
           data-mute-toggle
           aria-pressed="false"
@@ -141,7 +153,6 @@
               <div class="mug-inside"><div class="beer"></div></div>
             </div>
           </div>
-          <button type="button" data-exit>Exit round</button>
         </header>
         <div class="paper-space">
           <div class="bad-draw-sheet">

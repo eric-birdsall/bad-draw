@@ -947,3 +947,8 @@ footer p {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* During a round the masthead buttons sit at the end of the top bar. */
+.round-bar .masthead-buttons {
+  align-self: center;
+}
