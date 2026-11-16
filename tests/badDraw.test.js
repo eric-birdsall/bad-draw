@@ -8,7 +8,7 @@ import {
 } from "../shared/badDraw.js";
 import { BAD_DRAW_WORDS, DIFFICULTIES, createWordPicker, wordsAt } from "../shared/badDrawWords.js";
 
-const SOBER = { ...BAD_DRAW, ramp: 1, hiccups: 0 };
+const SOBER = { ...BAD_DRAW, ramp: 1, hiccupEvery: 0 };
 const length = ({ x, y }) => Math.hypot(x, y);
 
 test("drift changes smoothly, varies by seed and stays within the logical ink offset", () => {
@@ -67,7 +67,7 @@ test("the drawer gets drunker: drift reaches further late in the round, smoothly
 
 test("hiccups jolt the ink briefly, then the drift carries on as before", () => {
   // 15 hiccups in a 60 s round: one in each 4 s stretch.
-  const config = { ...SOBER, hiccups: 15, duration: 60_000 };
+  const config = { ...SOBER, hiccupEvery: 4000, duration: 60_000 };
   const sober = createDrift(5, SOBER),
     hic = createDrift(5, config);
   const jolts = Array.from({ length: 60_000 / BAD_DRAW.sampleMs }, (_, i) => {
@@ -81,7 +81,7 @@ test("hiccups jolt the ink briefly, then the drift carries on as before", () => 
   assert.ok(Math.abs(active - 15 * config.hiccupMs) < 15 * 2 * BAD_DRAW.sampleMs);
   assert.ok(Math.max(...jolts) > config.hiccupSize * 0.95);
   assert.ok(Math.max(...jolts) <= config.hiccupSize + 1e-9);
-  assert.deepEqual(createDrift(5, { ...config, hiccups: 0 })(1234), sober(1234));
+  assert.deepEqual(createDrift(5, { ...config, hiccupEvery: 0 })(1234), sober(1234));
   // The page is told about each hiccup once, by id, while it is happening.
   const ids = new Set();
   for (let t = 0; t < 60_000; t += BAD_DRAW.sampleMs) {
@@ -99,7 +99,7 @@ test("hiccups jolt the ink briefly, then the drift carries on as before", () => 
       const h = drift.hiccup(t);
       if (h) seen.add(h.id);
     }
-    assert.equal(seen.size, BAD_DRAW.hiccups);
+    assert.equal(seen.size, 4); // 30 s / 8 s, rounded
   }
 });
 

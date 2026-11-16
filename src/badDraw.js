@@ -11,14 +11,15 @@ import { createGallery } from "./gallery.js";
 import "./badDraw.css";
 
 // Medium is the shared default. Easy is a steady sway with a little room for mistakes;
-// Hard wanders far and fast, hiccups often, and gives less time and fewer fixes.
+// Hard wanders far and fast, hiccups harder, and gives less time and fewer fixes.
 const PRESETS = {
   easy: {
     amplitude: 20,
     frequency: 1.7,
     lean: 0.35,
     ramp: 1.5,
-    hiccups: 4,
+    // A gentler pace than the 8 s default: 45 s / 11 s ≈ 4 hiccups.
+    hiccupEvery: 11_000,
     hiccupSize: 36,
     duration: 45_000,
     undo: 2,
@@ -27,20 +28,19 @@ const PRESETS = {
     note: "Steady sway, 4 hiccups, 45 seconds, 2 undos",
   },
   medium: {
-    note: "Big lurches, 5 hiccups, 30 seconds, 1 undo",
+    note: "Big lurches, 4 hiccups, 30 seconds, 1 undo",
   },
   hard: {
     amplitude: 42,
     frequency: 2.8,
     lean: 0.5,
     ramp: 2,
-    hiccups: 5,
     hiccupSize: 70,
     duration: 15_000,
     undo: 0,
     clear: 1,
     urgentSeconds: 5,
-    note: "Blackout wobble, 5 hiccups, 15 seconds, no undos",
+    note: "Blackout wobble, 2 hiccups, 15 seconds, no undos",
   },
 };
 const RULES = {
@@ -85,13 +85,13 @@ const DEV_SLIDERS = [
     unit: "×",
   },
   {
-    key: "hiccups",
-    label: "Hiccups per round",
+    key: "hiccupEvery",
+    label: "Hiccup every",
     min: 0,
-    max: 20,
-    step: 1,
-    unit: "",
-    format: (value) => (value ? `${value}` : "off"),
+    max: 30000,
+    step: 1000,
+    unit: " s",
+    format: (value) => (value ? `${value / 1000} s` : "off"),
   },
   {
     key: "hiccupSize",
@@ -126,6 +126,18 @@ const pickWord = createWordPicker({ words: wordsAt(["easy", "medium"]) });
 
 const get = (key) => root.querySelector(`[data-${key}]`);
 const intro = root.querySelector(".bad-draw-intro");
+
+// Version and last-commit date, injected by vite.config.js.
+{
+  const { version, commit, date } = __BUILD__;
+  const day = new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  get("build").textContent = `Version ${version} · Last updated ${day}`;
+  if (commit) get("build").title = `Commit ${commit}`;
+}
 const play = root.querySelector(".bad-draw-play");
 const canvas = play.querySelector("canvas");
 const cursor = play.querySelector(".bad-draw-cursor");
@@ -334,6 +346,7 @@ function ready() {
   root.classList.remove("playing");
   intro.hidden = false;
   get("setup").hidden = get("settings").hidden = get("next").hidden = false;
+  get("build").hidden = false;
   get("peek").hidden = get("leave").hidden = get("swap").hidden = true;
   get("heading").textContent = "Ready to draw?";
   get("description").textContent = RULES[mode];
@@ -368,7 +381,7 @@ function reveal() {
   swapLeft = 1;
   peeked = false;
   phase = PHASE.REVEAL;
-  get("setup").hidden = get("settings").hidden = true;
+  get("setup").hidden = get("settings").hidden = get("build").hidden = true;
   get("leave").hidden = false;
   get("heading").textContent = "Guessers, look away!";
   get("description").textContent =

@@ -8,10 +8,10 @@ export const BAD_DRAW = Object.freeze({
   lean: 0.45,
   // Distance and speed multiplier reached by the end of the round.
   ramp: 1.75,
-  // Hiccups per round (0 turns them off), their reach and length. The round is
-  // split into this many equal stretches, with one hiccup at a random moment
-  // in each.
-  hiccups: 5,
+  // About one hiccup per this many ms (0 turns them off), their reach and
+  // length. A round gets duration / hiccupEvery hiccups, rounded; it is split
+  // into that many equal stretches, with one hiccup at a random moment in each.
+  hiccupEvery: 8000,
   hiccupSize: 52,
   hiccupMs: 320,
   strokeWidth: 5,
@@ -28,6 +28,11 @@ export const DRAW_PHASE = Object.freeze({
   PLAYING: "playing",
   RESULTS: "results",
 });
+
+/** Hiccups in a round of `duration` ms: one per `every` ms, rounded, at least one. */
+export function hiccupCount(duration, every) {
+  return every > 0 ? Math.max(1, Math.round(duration / every)) : 0;
+}
 
 /** How drunk the drawer is `ms` into a round: 1 at the start, `ramp` at the end. */
 export function drunkenness(ms, duration, ramp) {
@@ -73,8 +78,9 @@ export function createDrift(seed, config = BAD_DRAW, duration = config.duration)
   /** The hiccup in progress, if any: `id` is unique per hiccup in a round,
    * `angle` is the jolt direction and `x`/`y` its current offset. */
   const hiccup = (timeMs) => {
-    if (!(config.hiccups > 0) || !config.hiccupSize) return null;
-    const gap = duration / config.hiccups;
+    const count = hiccupCount(duration, config.hiccupEvery);
+    if (!count || !config.hiccupSize) return null;
+    const gap = duration / count;
     const window = Math.floor(timeMs / gap);
     const start = (window + 0.15 + 0.35 * (lattice(window, 0x5d1c07) + 1)) * gap;
     const progress = (timeMs - start) / config.hiccupMs;
